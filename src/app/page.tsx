@@ -9,6 +9,8 @@ import { useSearch } from '@/context/search-context';
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { AboutTimeline } from '@/components/about-timeline';
+import { WhyChooseUs } from '@/components/why-choose-us';
 
 export default function HomePage() {
   const { searchQuery, setSearchQuery } = useSearch();
@@ -76,8 +78,7 @@ export default function HomePage() {
             category={category} 
             products={products} 
             searchQuery={searchQuery} 
-            // Use more generous padding for the first product list
-            className={index === 0 ? "py-10 md:py-16" : "py-8 md:py-12"} 
+            className={index === 0 ? "pt-10 md:pt-16 pb-8 md:pb-12" : "py-8 md:py-12"} 
           />
           {index < categoriesToDisplay.length - 1 && (
             <div className="container max-w-screen-2xl px-4 md:px-6">
@@ -86,6 +87,18 @@ export default function HomePage() {
           )}
         </div>
       ))}
+
+      <div className="container max-w-screen-2xl px-4 md:px-6 py-10 md:py-16">
+        <Separator className="mb-10 md:mb-16" />
+        <AboutTimeline />
+      </div>
+
+      <div className="bg-muted/30">
+        <div className="container max-w-screen-2xl px-4 md:px-6 py-10 md:py-16">
+          <WhyChooseUs />
+        </div>
+      </div>
+
     </div>
   );
 }

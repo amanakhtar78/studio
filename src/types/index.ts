@@ -1,4 +1,6 @@
 
+import type { LucideIcon } from 'lucide-react';
+
 export interface BannerImage {
   id: string;
   src: string;
@@ -7,7 +9,7 @@ export interface BannerImage {
 }
 
 export interface Category {
-  id: string;
+  id:string;
   name: string;
   slug: string;
 }
@@ -51,4 +53,17 @@ export interface CheckoutFormData {
   phoneNumber: string;
   deliveryAddress: string;
   pinCode: string;
+}
+
+export interface TimelineEvent {
+  year: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}
+
+export interface HighlightItem {
+  icon: LucideIcon;
+  title: string;
+  description: string;
 }
