@@ -47,18 +47,18 @@ export function ProductCard({ product }: ProductCardProps) {
           />
         </div>
       </CardHeader>
-      <CardContent className="p-4 flex-grow">
-        <CardTitle className="text-lg font-semibold mb-1 truncate" title={product.name}>{product.name}</CardTitle>
+      <CardContent className="p-5 flex-grow">
+        <CardTitle className="text-lg font-semibold mb-2 truncate" title={product.name}>{product.name}</CardTitle>
         <Badge variant="secondary" className="mb-2 text-xs">{product.categoryName}</Badge>
         <CardDescription className="text-sm text-muted-foreground mb-2 h-10 overflow-hidden text-ellipsis">
           {product.description}
         </CardDescription>
         <p className="text-lg font-bold text-primary mb-2">KES {product.price.toLocaleString()}</p>
-        <Badge variant={product.stockAvailability ? 'default' : 'destructive'} className="bg-green-500 text-white data-[destructive=true]:bg-red-500 data-[destructive=true]:text-white text-xs">
+        <Badge variant={product.stockAvailability ? 'default' : 'destructive'} className={`${product.stockAvailability ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white text-xs`}>
           {product.stockAvailability ? 'In Stock' : 'Out of Stock'}
         </Badge>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-5 pt-0">
         {quantityInCart === 0 ? (
           <Button
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
@@ -73,7 +73,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Button variant="outline" size="icon" onClick={handleDecreaseQuantity} aria-label="Decrease quantity">
               <Minus className="h-4 w-4" />
             </Button>
-            <span className="text-lg font-medium mx-4">{quantityInCart}</span>
+            <span className="text-lg font-medium mx-4 tabular-nums">{quantityInCart}</span>
             <Button variant="outline" size="icon" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!product.stockAvailability}>
               <Plus className="h-4 w-4" />
             </Button>

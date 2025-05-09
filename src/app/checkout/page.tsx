@@ -85,10 +85,10 @@ export default function CheckoutPage() {
             <CardHeader>
               <CardTitle className="text-2xl">Order Summary</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="divide-y divide-border">
               {cartItemsWithDetails.map((item) => (
-                <div key={item.id} className="flex items-center space-x-4 py-4 border-b last:border-b-0">
-                  <div className="relative w-20 h-20 rounded-md overflow-hidden">
+                <div key={item.id} className="flex items-center space-x-4 py-5 first:pt-0 last:pb-0">
+                  <div className="relative w-24 h-24 rounded-md overflow-hidden">
                     <Image src={item.imageUrl} alt={item.name} layout="fill" objectFit="cover" data-ai-hint={item.dataAiHint} />
                   </div>
                   <div className="flex-grow">
@@ -96,17 +96,17 @@ export default function CheckoutPage() {
                     <p className="text-sm text-muted-foreground">KES {item.price.toLocaleString()}</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.productId, item.quantity - 1)}>
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.productId, item.quantity - 1)}>
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span>{item.quantity}</span>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.productId, item.quantity + 1)} disabled={!item.stockAvailability}>
+                    <span className="text-lg font-medium w-8 text-center tabular-nums">{item.quantity}</span>
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.productId, item.quantity + 1)} disabled={!item.stockAvailability}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="font-semibold w-24 text-right">KES {(item.price * item.quantity).toLocaleString()}</p>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-8 w-8" onClick={() => updateItemQuantity(item.productId, 0)}>
-                     <Trash2 className="h-4 w-4" />
+                  <p className="font-semibold w-28 text-right tabular-nums">KES {(item.price * item.quantity).toLocaleString()}</p>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-9 w-9" onClick={() => updateItemQuantity(item.productId, 0)}>
+                     <Trash2 className="h-5 w-5" />
                   </Button>
                 </div>
               ))}

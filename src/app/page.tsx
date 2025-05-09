@@ -43,11 +43,11 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col">
-      <div className="container max-w-screen-2xl px-4 md:px-6 py-6 md:py-8">
+      <div className="container max-w-screen-2xl px-4 md:px-6 py-8 md:py-12">
         <Banner images={bannerImages} />
       </div>
 
-      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-4 md:py-6">
+      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-8 md:py-10">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
@@ -76,10 +76,12 @@ export default function HomePage() {
             category={category} 
             products={products} 
             searchQuery={searchQuery} 
+            // Use more generous padding for the first product list
+            className={index === 0 ? "py-10 md:py-16" : "py-8 md:py-12"} 
           />
           {index < categoriesToDisplay.length - 1 && (
             <div className="container max-w-screen-2xl px-4 md:px-6">
-              <Separator className="my-8 md:my-12" />
+              <Separator className="my-10 md:my-16" />
             </div>
           )}
         </div>

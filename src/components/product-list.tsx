@@ -1,14 +1,16 @@
 
 import type { Product, Category } from '@/types';
 import { ProductCard } from './product-card';
+import { cn } from '@/lib/utils';
 
 interface ProductListProps {
   category: Category;
   products: Product[];
   searchQuery?: string;
+  className?: string; // Added className prop
 }
 
-export function ProductList({ category, products, searchQuery }: ProductListProps) {
+export function ProductList({ category, products, searchQuery, className }: ProductListProps) {
   let categoryProducts = products.filter(p => p.categorySlug === category.slug);
 
   if (searchQuery && searchQuery.trim() !== '') {
@@ -27,7 +29,13 @@ export function ProductList({ category, products, searchQuery }: ProductListProp
   }
   
   return (
-    <section id={category.slug} className="py-8 md:py-12 scroll-mt-24"> {/* scroll-mt accounts for sticky navbar */}
+    <section 
+      id={category.slug} 
+      className={cn(
+        "py-8 md:py-12 scroll-mt-24", // Default padding
+        className // Allow overriding or extending padding
+      )}
+    >
       <div className="container max-w-screen-2xl px-4 md:px-6">
         <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6 md:mb-8 text-center md:text-left">
           {category.name}
