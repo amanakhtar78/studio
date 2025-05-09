@@ -1,20 +1,19 @@
 
 'use client';
 
-import type { Product, CartItem } from '@/types';
-import { products as allProducts } from '@/lib/mock-data';
+import type { Product, CartItem, CartItemWithProductDetails } from '@/types';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useCallback } from 'react';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (productId: string) => void;
-  removeItem: (productId: string) => void; // This will effectively be updateItemQuantity(productId, currentQuantity - 1)
+  addItem: (productId: string) => void; // productId will be string (product.id.toString())
+  removeItem: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
   getItemQuantity: (productId: string) => number;
-  getCartItemsWithDetails: () => (CartItem & Product & { itemTotal: number })[];
+  getCartItemsWithDetails: (allApiProducts: Product[]) => CartItemWithProductDetails[];
+  getCartSubtotal: (allApiProducts: Product[]) => number;
   totalItemsCount: number;
-  cartSubtotal: number;
   clearCart: () => void;
 }
 
@@ -58,7 +57,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 return prevItems.filter(item => item.productId !== productId);
             }
         }
-        return prevItems; // Should not happen if item is in cart
+        return prevItems;
     });
   }, []);
 
@@ -72,24 +71,28 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return items.reduce((total, item) => total + item.quantity, 0);
   }, [items]);
 
-  const getCartItemsWithDetails = useCallback(() => {
+  const getCartItemsWithDetails = useCallback((allApiProducts: Product[]): CartItemWithProductDetails[] => {
     return items.map(cartItem => {
-      const productDetails = allProducts.find(p => p.id === cartItem.productId);
+      // API product.id is number, cartItem.productId is string
+      const productDetails = allApiProducts.find(p => p.id.toString() === cartItem.productId);
+      
       if (!productDetails) {
-        // This case should ideally not happen if product IDs are consistent
-        throw new Error(`Product with ID ${cartItem.productId} not found.`);
+        console.warn(`Product with ID ${cartItem.productId} not found in API products list.`);
+        return null; 
       }
       return {
-        ...productDetails, // Spread all product properties
-        ...cartItem, // Spread cartItem (productId, quantity)
+        ...productDetails, // Spread all API product properties (id, title, price, description, category, image, rating)
+        cartQuantity: cartItem.quantity,
         itemTotal: productDetails.price * cartItem.quantity,
+        stockAvailability: productDetails.stockAvailability !== undefined ? productDetails.stockAvailability : true, // Ensure stockAvailability is present
       };
-    });
+    }).filter(item => item !== null) as CartItemWithProductDetails[];
   }, [items]);
 
-  const cartSubtotal = useMemo(() => {
-    return getCartItemsWithDetails().reduce((total, item) => total + item.price * item.quantity, 0);
-  }, [getCartItemsWithDetails]);
+  const getCartSubtotal = useCallback((allApiProducts: Product[]) => {
+    return getCartItemsWithDetails(allApiProducts).reduce((total, item) => total + item.price * item.cartQuantity, 0);
+  }, [items, getCartItemsWithDetails]);
+
 
   const clearCart = useCallback(() => {
     setItems([]);
@@ -104,8 +107,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         updateItemQuantity,
         getItemQuantity,
         getCartItemsWithDetails,
+        getCartSubtotal,
         totalItemsCount,
-        cartSubtotal,
         clearCart,
       }}
     >

@@ -9,6 +9,7 @@ import { CartProvider } from '@/context/cart-context';
 import { SearchProvider } from '@/context/search-context';
 import { AuthProvider } from '@/context/auth-context';
 import { AuthModal } from '@/components/auth/auth-modal';
+import { StoreProvider } from '@/components/store-provider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,19 +34,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
-        <AuthProvider>
-          <SearchProvider>
-            <CartProvider>
-              <Navbar />
-              <main className="flex-grow">
-                {children}
-              </main>
-              <Footer />
-              <Toaster />
-              <AuthModal /> 
-            </CartProvider>
-          </SearchProvider>
-        </AuthProvider>
+        <StoreProvider>
+          <AuthProvider>
+            <SearchProvider>
+              <CartProvider>
+                <Navbar />
+                <main className="flex-grow">
+                  {children}
+                </main>
+                <Footer />
+                <Toaster />
+                <AuthModal /> 
+              </CartProvider>
+            </SearchProvider>
+          </AuthProvider>
+        </StoreProvider>
       </body>
     </html>
   );

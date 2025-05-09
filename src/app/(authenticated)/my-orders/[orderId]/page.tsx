@@ -3,7 +3,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { sampleOrders, products as allProducts } from '@/lib/mock-data';
+import { sampleOrders } from '@/lib/mock-data'; // Removed products as allProducts
 import type { Order, OrderItemDetail } from '@/types';
 import { OrderProgressBar } from '@/components/order-progress-bar';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ export default function OrderDetailPage() {
   // In a real app, fetch order by ID and ensure it belongs to the user
   const order: Order | undefined = sampleOrders.find(o => o.id === orderId && o.userId === user?.id);
 
-  if (!isAuthenticated) { // Should be handled by layout, but good to double check
+  if (!isAuthenticated) { 
     router.replace('/');
     return null;
   }
@@ -79,13 +79,12 @@ export default function OrderDetailPage() {
             <div className="space-y-4">
               {order.items.map((item: OrderItemDetail) => (
                 <div key={item.productId} className="flex items-start space-x-4 p-3 border rounded-lg bg-card hover:bg-muted/20 transition-colors">
-                  <div className="relative w-20 h-20 rounded-md overflow-hidden border">
+                  <div className="relative w-20 h-20 rounded-md overflow-hidden border bg-white p-1">
                     <Image 
                         src={item.imageUrl || `https://picsum.photos/seed/${item.productId}/100/100`} 
                         alt={item.name} 
                         layout="fill" 
-                        objectFit="cover"
-                        data-ai-hint={item.dataAiHint || "food item"}
+                        objectFit="contain" // Changed to contain
                     />
                   </div>
                   <div className="flex-grow">
@@ -107,7 +106,7 @@ export default function OrderDetailPage() {
                 <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal:</span>
-                        <span>KES {order.totalAmount.toLocaleString()}</span> {/* Assuming totalAmount is subtotal for now */}
+                        <span>KES {order.totalAmount.toLocaleString()}</span> 
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Delivery Fee:</span>
@@ -152,8 +151,3 @@ export default function OrderDetailPage() {
     </div>
   );
 }
-
-// export const metadata = { // Dynamic metadata would require generating static params or server component logic
-//   title: 'Order Details - Zahra Sweet Rolls',
-//   description: 'View the details of your order from Zahra Sweet Rolls.',
-// };

@@ -15,22 +15,24 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { getItemQuantity, addItem, updateItemQuantity } = useCart();
-  const quantityInCart = getItemQuantity(product.id);
+  const quantityInCart = getItemQuantity(product.id.toString()); // Product ID is number, cart uses string
+
+  const stockAvailable = product.stockAvailability !== undefined ? product.stockAvailability : true; // Default to true if undefined
 
   const handleAddToCart = () => {
-    if (product.stockAvailability) {
-      addItem(product.id);
+    if (stockAvailable) {
+      addItem(product.id.toString());
     }
   };
 
   const handleIncreaseQuantity = () => {
-    if (product.stockAvailability) {
-      updateItemQuantity(product.id, quantityInCart + 1);
+    if (stockAvailable) {
+      updateItemQuantity(product.id.toString(), quantityInCart + 1);
     }
   };
 
   const handleDecreaseQuantity = () => {
-    updateItemQuantity(product.id, quantityInCart - 1);
+    updateItemQuantity(product.id.toString(), quantityInCart - 1);
   };
 
   return (
@@ -38,33 +40,32 @@ export function ProductCard({ product }: ProductCardProps) {
       <CardHeader className="p-0">
         <div className="relative w-full h-48">
           <Image
-            src={product.imageUrl}
-            alt={product.name}
+            src={product.image} // API field: image
+            alt={product.title} // API field: title
             layout="fill"
-            objectFit="cover"
-            data-ai-hint={product.dataAiHint}
-            className="rounded-t-lg"
+            objectFit="contain" // Changed to contain to show full image, or "cover" if cropping is fine
+            className="rounded-t-lg p-2 bg-white" // Added padding and white background for better presentation
           />
         </div>
       </CardHeader>
       <CardContent className="p-5 flex-grow">
-        <CardTitle className="text-lg font-semibold mb-2 truncate" title={product.name}>{product.name}</CardTitle>
-        <Badge variant="secondary" className="mb-2 text-xs">{product.categoryName}</Badge>
+        <CardTitle className="text-lg font-semibold mb-2 truncate" title={product.title}>{product.title}</CardTitle>
+        <Badge variant="secondary" className="mb-2 text-xs">{product.category}</Badge>
         <CardDescription className="text-sm text-muted-foreground mb-2 h-10 overflow-hidden text-ellipsis">
           {product.description}
         </CardDescription>
         <p className="text-lg font-bold text-primary mb-2">KES {product.price.toLocaleString()}</p>
-        <Badge variant={product.stockAvailability ? 'default' : 'destructive'} className={`${product.stockAvailability ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white text-xs`}>
-          {product.stockAvailability ? 'In Stock' : 'Out of Stock'}
+        <Badge variant={stockAvailable ? 'default' : 'destructive'} className={`${stockAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white text-xs`}>
+          {stockAvailable ? 'In Stock' : 'Out of Stock'}
         </Badge>
       </CardContent>
       <CardFooter className="p-5 pt-0">
         {quantityInCart === 0 ? (
           <Button
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-            disabled={!product.stockAvailability}
+            disabled={!stockAvailable}
             onClick={handleAddToCart}
-            aria-label={`Add ${product.name} to cart`}
+            aria-label={`Add ${product.title} to cart`}
           >
             <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
           </Button>
@@ -74,7 +75,7 @@ export function ProductCard({ product }: ProductCardProps) {
               <Minus className="h-4 w-4" />
             </Button>
             <span className="text-lg font-medium mx-4 tabular-nums">{quantityInCart}</span>
-            <Button variant="outline" size="icon" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!product.stockAvailability}>
+            <Button variant="outline" size="icon" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!stockAvailable}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>

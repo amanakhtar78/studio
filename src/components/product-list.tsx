@@ -5,26 +5,26 @@ import { cn } from '@/lib/utils';
 
 interface ProductListProps {
   category: Category;
-  products: Product[];
+  allProducts: Product[]; // All products from the store
   searchQuery?: string;
-  className?: string; // Added className prop
+  className?: string;
 }
 
-export function ProductList({ category, products, searchQuery, className }: ProductListProps) {
-  let categoryProducts = products.filter(p => p.categorySlug === category.slug);
+export function ProductList({ category, allProducts, searchQuery, className }: ProductListProps) {
+  // API product.category is a string like "men's clothing"
+  // Category.name is like "Men's Clothing"
+  // Filter products belonging to the current category
+  let categoryProducts = allProducts.filter(p => p.category.toLowerCase() === category.name.toLowerCase());
 
   if (searchQuery && searchQuery.trim() !== '') {
     const lowercasedQuery = searchQuery.toLowerCase();
     categoryProducts = categoryProducts.filter(product =>
-      product.name.toLowerCase().includes(lowercasedQuery) ||
+      product.title.toLowerCase().includes(lowercasedQuery) || // API uses title
       product.description.toLowerCase().includes(lowercasedQuery)
     );
   }
 
   if (categoryProducts.length === 0 && searchQuery && searchQuery.trim() !== '') {
-    // If there's a search query and this category has no matching products,
-    // don't render this category section at all.
-    // The global "no results" message will be handled in HomePage.
     return null;
   }
   
@@ -32,8 +32,8 @@ export function ProductList({ category, products, searchQuery, className }: Prod
     <section 
       id={category.slug} 
       className={cn(
-        "py-8 md:py-12 scroll-mt-24", // Default padding
-        className // Allow overriding or extending padding
+        "py-8 md:py-12 scroll-mt-24", 
+        className 
       )}
     >
       <div className="container max-w-screen-2xl px-4 md:px-6">

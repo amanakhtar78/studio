@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth } from '@/context/auth-context';
-import { sampleOrders, products as allProducts } from '@/lib/mock-data'; // Using sampleOrders for now
+import { sampleOrders } from '@/lib/mock-data'; // Using sampleOrders for now
 import type { Order } from '@/types';
 import { OrderProgressBar } from '@/components/order-progress-bar';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { Package, AlertCircle, ShoppingBag } from 'lucide-react';
+import { Package, ShoppingBag } from 'lucide-react'; // Removed AlertCircle as it's not used when orders exist
 
 export default function MyOrdersPage() {
   const { user } = useAuth();
-  // In a real app, fetch orders for user.id
   const userOrders: Order[] = user ? sampleOrders.filter(order => order.userId === user.id) : [];
 
   if (!userOrders || userOrders.length === 0) {
@@ -64,10 +63,15 @@ export default function MyOrdersPage() {
               <div className="mb-4">
                 <h4 className="font-semibold text-md mb-2">Items:</h4>
                 <ul className="space-y-2">
-                  {order.items.slice(0,2).map(item => ( // Show first 2 items as preview
+                  {order.items.slice(0,2).map(item => ( 
                     <li key={item.productId} className="flex items-center space-x-3 text-sm">
-                      <div className="relative w-12 h-12 rounded-md overflow-hidden border">
-                        <Image src={item.imageUrl || `https://picsum.photos/seed/${item.productId}/50/50`} alt={item.name} layout="fill" objectFit="cover" data-ai-hint={item.dataAiHint || "food item"} />
+                      <div className="relative w-12 h-12 rounded-md overflow-hidden border bg-white p-0.5">
+                        <Image 
+                            src={item.imageUrl || `https://picsum.photos/seed/${item.productId}/50/50`} 
+                            alt={item.name} 
+                            layout="fill" 
+                            objectFit="contain" // Changed to contain
+                        />
                       </div>
                       <span>{item.name} (x{item.quantity})</span>
                       <span className="ml-auto font-medium">KES {(item.price * item.quantity).toLocaleString()}</span>
@@ -100,9 +104,3 @@ export default function MyOrdersPage() {
     </div>
   );
 }
-
-// Metadata removed as it cannot be exported from a client component.
-// export const metadata = {
-//   title: 'My Orders - Zahra Sweet Rolls',
-//   description: 'View your order history and track active orders from Zahra Sweet Rolls.',
-// };

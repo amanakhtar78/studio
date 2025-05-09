@@ -1,8 +1,10 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import type { Category } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 
 interface CategorySelectorProps {
   categories: Category[];
@@ -18,23 +20,33 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
   const handleScrollToCategory = (slug: string) => {
     const element = document.getElementById(slug);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Adjust scroll offset if navbar is sticky
+      const navbarHeight = 64; // Approximate height of the navbar
+      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+      const offsetPosition = elementPosition - navbarHeight - 20; // Extra 20px padding
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
     }
   };
 
-  if (!isMounted) {
+
+  if (!isMounted || !categories || categories.length === 0) { // Check if categories are loaded
     return (
-      <div className="py-4">
-        <div className="flex space-x-2 overflow-x-auto pb-2 no-scrollbar">
-          {[...Array(4)].map((_, i) => (
-            <Button key={i} variant="outline" className="bg-muted/50 animate-pulse w-24 h-10" disabled>
-              &nbsp;
-            </Button>
-          ))}
+      <div className="py-4 md:py-6 sticky top-16 bg-background/90 backdrop-blur-sm z-40 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6">
+        <div className="container max-w-screen-2xl px-0">
+          <div className="flex space-x-3 overflow-x-auto pb-2 no-scrollbar">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-9 w-24 rounded-md" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
+  
 
   return (
     <div className="py-4 md:py-6 sticky top-16 bg-background/90 backdrop-blur-sm z-40 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6">
@@ -56,8 +68,3 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
     </div>
   );
 }
-
-// Helper CSS to hide scrollbar (add to globals.css or use Tailwind plugin if available)
-// .no-scrollbar::-webkit-scrollbar { display: none; }
-// .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-// This is already handled by Tailwind usually, but good to note.

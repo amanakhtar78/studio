@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+// import Image from 'next/image'; // Not used directly here anymore for categories
 import { SweetRollsLogo } from '@/components/icons/sweet-rolls-logo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { categories } from '@/lib/mock-data';
+// import { categories as mockCategories } from '@/lib/mock-data'; // Mock categories removed
 import { Menu, ShoppingCart, User as UserIcon, LogOut, Package, Edit3, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
@@ -23,6 +23,11 @@ import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/context/auth-context';
 import { useAuthModal } from '@/hooks/use-auth-modal';
 import { useRouter, usePathname } from 'next/navigation';
+
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
+import type { Category } from '@/types';
+
 
 export function Navbar() {
   const [isMounted, setIsMounted] = useState(false);
@@ -32,21 +37,38 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const categoriesFromStore = useSelector((state: RootState) => state.categories.items);
+  const categoryStatus = useSelector((state: RootState) => state.categories.status);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const handleScrollToCategory = (slug: string, closeSheet?: () => void) => {
     closeSheet?.();
-    if (pathname !== '/') {
-      router.push('/');
-      setTimeout(() => {
-        const element = document.getElementById(slug);
-        if (element) element.scrollIntoView({ behavior: 'smooth' });
-      }, 300);
+
+    const element = document.getElementById(slug);
+    if (element) {
+        const navbarHeight = 64; 
+        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - navbarHeight - 20; 
+
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+        });
     } else {
-      const element = document.getElementById(slug);
-      if (element) element.scrollIntoView({ behavior: 'smooth' });
+        // If element not found (e.g. different page), navigate then scroll
+        router.push('/');
+        setTimeout(() => {
+            const el = document.getElementById(slug);
+            if (el) {
+                const navbarHeight = 64;
+                const elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
+                const offsetPosition = elementPosition - navbarHeight - 20;
+                window.scrollTo({ top: offsetPosition, behavior: 'smooth'});
+            }
+        }, 300); // Delay to allow page navigation
     }
   };
 
@@ -62,7 +84,7 @@ export function Navbar() {
   const handleLogout = (closeSheet?: () => void) => {
     closeSheet?.();
     logout();
-    router.push('/'); // Redirect to home on logout
+    router.push('/'); 
   };
 
   const handleEditProfileClick = (closeSheet?: () => void) => {
@@ -71,9 +93,9 @@ export function Navbar() {
   };
 
 
-  const navLinks = (closeSheet?: () => void) => (
+  const navLinks = (categoriesToUse: Category[], closeSheet?: () => void) => (
     <>
-      {categories.map((category) => (
+      {categoriesToUse.map((category) => (
         <Button
           key={category.id}
           variant="ghost"
@@ -94,7 +116,6 @@ export function Navbar() {
   );
 
   if (!isMounted) {
-    // Simplified skeleton for navbar
     return (
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
         <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-6">
@@ -103,14 +124,17 @@ export function Navbar() {
             <span className="font-bold text-xl">Zahra Sweet Rolls</span>
           </Link>
           <div className="flex items-center space-x-2">
-             <div className="h-8 w-20 bg-muted rounded-md animate-pulse"></div> {/* Placeholder for auth button */}
-             <div className="h-8 w-8 bg-muted rounded-full animate-pulse"></div> {/* Placeholder for cart */}
-             <div className="md:hidden h-8 w-8 bg-muted rounded-md animate-pulse"></div> {/* Placeholder for menu */}
+             <div className="h-8 w-20 bg-muted rounded-md animate-pulse"></div>
+             <div className="h-8 w-8 bg-muted rounded-full animate-pulse"></div>
+             <div className="md:hidden h-8 w-8 bg-muted rounded-md animate-pulse"></div>
           </div>
         </div>
       </header>
     );
   }
+  
+  const currentCategories = categoryStatus === 'succeeded' ? categoriesFromStore : [];
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -123,7 +147,7 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
-          {navLinks()}
+          {navLinks(currentCategories)}
         </nav>
 
         <div className="flex items-center space-x-2 md:space-x-3">
@@ -198,7 +222,8 @@ export function Navbar() {
                     </div>
                   )}
                   <SheetClose asChild>
-                    <div>{navLinks(() => {})}</div>
+                     {/* Pass empty function for closeSheet as SheetClose handles it */}
+                    <div>{navLinks(currentCategories, () => {})}</div>
                   </SheetClose>
                   
                   {isAuthenticated && user && (

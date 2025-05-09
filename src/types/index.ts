@@ -8,21 +8,24 @@ export interface BannerImage {
 }
 
 export interface Category {
-  id:string;
-  name: string;
-  slug: string;
+  id: string; // Generated: "cat-slug-from-name" or from API if available
+  name: string; // From API (e.g., "electronics")
+  slug: string; // Generated: "electronics" or from API
 }
 
 export interface Product {
-  id: string;
-  name: string;
+  id: number; // from API
+  title: string; // API uses title (map to name if needed by components)
+  price: number;
   description: string;
-  price: number; // KES
-  categorySlug: string; 
-  categoryName: string;
-  imageUrl: string;
-  stockAvailability: boolean;
-  dataAiHint?: string;
+  category: string; // API returns category name directly (map to categoryName if needed)
+  image: string; // API uses image (map to imageUrl if needed)
+  rating: {
+    rate: number;
+    count: number;
+  };
+  // Fields like stockAvailability can be added if API supports or default assumed
+  stockAvailability?: boolean; // Added for consistency, will default to true
 }
 
 // --- START AUTH and USER TYPES ---
@@ -62,12 +65,12 @@ export const DELIVERY_ORDER_STATUS_STEPS: OrderStatusDelivery[] = ["Order Placed
 
 
 export interface OrderItemDetail {
-  productId: string;
-  name: string;
+  productId: string; // Keep as string to match CartItem
+  name: string; // This should align with Product's title
   quantity: number;
   price: number; // Price at the time of order for one unit
-  imageUrl?: string;
-  dataAiHint?: string;
+  imageUrl?: string; // This should align with Product's image
+  dataAiHint?: string; // This might be deprecated if API doesn't provide similar
 }
 
 export interface Order {
@@ -86,13 +89,16 @@ export interface Order {
 
 
 export interface CartItem {
-  productId: string;
+  productId: string; // Store as string, API product ID is number
   quantity: number;
 }
 
-export interface CartItemWithProduct extends Product {
-  quantity: number;
+// This type will be used when combining CartItem with full Product details from the store
+export interface CartItemWithProductDetails extends Product {
+  cartQuantity: number; // Renamed from quantity to avoid clash with Product.rating.count or other quantity fields
+  itemTotal: number;
 }
+
 
 // This is for one-off checkout, distinct from User's primary address
 export interface CheckoutFormData {

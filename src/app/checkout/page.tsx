@@ -9,20 +9,17 @@ import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minus, Plus, Trash2, Loader2 } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import type { CheckoutFormData } from '@/types';
-import { useEffect, useState }
-from 'react';
+import type { CheckoutFormData, Product } from '@/types';
+import { useEffect, useState } from 'react';
 
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -30,6 +27,9 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 
 
 const checkoutFormSchema = z.object({
@@ -40,11 +40,16 @@ const checkoutFormSchema = z.object({
 });
 
 export default function CheckoutPage() {
-  const { items, getCartItemsWithDetails, updateItemQuantity, cartSubtotal, clearCart } = useCart();
+  const { items: cartItemsBase, updateItemQuantity, clearCart, getCartItemsWithDetails, getCartSubtotal } = useCart();
   const { user, isAuthenticated } = useAuth();
-  const cartItemsWithDetails = getCartItemsWithDetails();
   const router = useRouter();
   const { toast } = useToast();
+
+  const { items: allApiProducts, status: productStatus } = useSelector((state: RootState) => state.products);
+  
+  const cartItemsWithDetails = productStatus === 'succeeded' ? getCartItemsWithDetails(allApiProducts) : [];
+  const cartSubtotal = productStatus === 'succeeded' ? getCartSubtotal(allApiProducts) : 0;
+
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutFormSchema),
@@ -56,14 +61,11 @@ export default function CheckoutPage() {
     },
   });
 
-  // true = use profile address, false = use new address form
   const [useProfileAddress, setUseProfileAddress] = useState<boolean>(false); 
 
   useEffect(() => {
-    // This effect runs when user/auth status changes, or when useProfileAddress toggle changes.
     if (isAuthenticated && user) {
       if (user.address && useProfileAddress) {
-        // User is logged in, has an address, and wants to use it.
         form.reset({
           fullName: user.name || '',
           phoneNumber: user.phoneNumber || '',
@@ -71,17 +73,14 @@ export default function CheckoutPage() {
           pinCode: user.address.pinCode,
         });
       } else {
-        // User is logged in, but either has no address, or wants to enter a new one.
-        // Pre-fill name and phone from profile, clear address fields for new entry.
         form.reset({
           fullName: user.name || '',
           phoneNumber: user.phoneNumber || '',
-          deliveryAddress: '', // Clear for new entry
-          pinCode: '',         // Clear for new entry
+          deliveryAddress: '', 
+          pinCode: '',         
         });
       }
     } else {
-      // Not authenticated, clear all fields.
       form.reset({
         fullName: '',
         phoneNumber: '',
@@ -92,11 +91,10 @@ export default function CheckoutPage() {
   }, [user, isAuthenticated, useProfileAddress, form]);
 
   useEffect(() => {
-    // Set initial state for useProfileAddress when component mounts or user/auth changes
     if (isAuthenticated && user?.address) {
-      setUseProfileAddress(true); // Default to using profile address if available
+      setUseProfileAddress(true); 
     } else {
-      setUseProfileAddress(false); // Otherwise, default to new address form
+      setUseProfileAddress(false); 
     }
   }, [isAuthenticated, user]);
 
@@ -112,12 +110,20 @@ export default function CheckoutPage() {
       description: 'Your delicious treats are on their way!',
     });
     clearCart();
-    // Simulate order creation and pass a mock order ID
     const mockOrderId = `ORD${Date.now().toString().slice(-6)}`; 
-    router.push(`/my-orders/${mockOrderId}?new=true`); // Navigate to order detail page
+    router.push(`/my-orders/${mockOrderId}?new=true`); 
   };
 
-  if (items.length === 0) {
+  if (productStatus === 'loading') {
+     return (
+      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-12 text-center flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Loading cart details...</p>
+      </div>
+    );
+  }
+
+  if (cartItemsBase.length === 0) {
     return (
       <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-12 text-center">
         <h1 className="text-3xl font-bold mb-6">Your Cart is Empty</h1>
@@ -128,6 +134,7 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
 
   return (
     <div className="container max-w-screen-xl mx-auto px-4 md:px-6 py-8 md:py-12">
@@ -141,24 +148,24 @@ export default function CheckoutPage() {
             <CardContent className="divide-y divide-border">
               {cartItemsWithDetails.map((item) => (
                 <div key={item.id} className="flex items-center space-x-4 py-5 first:pt-0 last:pb-0">
-                  <div className="relative w-24 h-24 rounded-md overflow-hidden">
-                    <Image src={item.imageUrl} alt={item.name} layout="fill" objectFit="cover" data-ai-hint={item.dataAiHint} />
+                  <div className="relative w-24 h-24 rounded-md overflow-hidden bg-white p-1">
+                    <Image src={item.image} alt={item.title} layout="fill" objectFit="contain" />
                   </div>
                   <div className="flex-grow">
-                    <h3 className="font-semibold">{item.name}</h3>
+                    <h3 className="font-semibold">{item.title}</h3>
                     <p className="text-sm text-muted-foreground">KES {item.price.toLocaleString()}</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.productId, item.quantity - 1)}>
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity - 1)}>
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="text-lg font-medium w-8 text-center tabular-nums">{item.quantity}</span>
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.productId, item.quantity + 1)} disabled={!item.stockAvailability}>
+                    <span className="text-lg font-medium w-8 text-center tabular-nums">{item.cartQuantity}</span>
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity + 1)} disabled={!item.stockAvailability}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="font-semibold w-28 text-right tabular-nums">KES {(item.price * item.quantity).toLocaleString()}</p>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-9 w-9" onClick={() => updateItemQuantity(item.productId, 0)}>
+                  <p className="font-semibold w-28 text-right tabular-nums">KES {(item.price * item.cartQuantity).toLocaleString()}</p>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), 0)}>
                      <Trash2 className="h-5 w-5" />
                   </Button>
                 </div>
@@ -260,7 +267,8 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full text-lg py-6 bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Button type="submit" className="w-full text-lg py-6 bg-accent hover:bg-accent/90 text-accent-foreground" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                     Place Order (KES {cartSubtotal.toLocaleString()})
                   </Button>
                 </form>
@@ -272,4 +280,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
