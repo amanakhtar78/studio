@@ -1,27 +1,38 @@
+
 'use client';
 
-import type { Order, OrderStatusStep } from '@/types';
-import { CheckCircle, Loader2, Truck, PackageSearch, PackageCheck, Circle } from 'lucide-react';
+import type { Order, OrderStatus } from '@/types'; // Updated OrderStatusStep to OrderStatus
+import { CheckCircle, Loader2, Truck, PackageSearch, PackageCheck, Circle, Utensils } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { getOrderStatusFlow } from '@/lib/mock-data'; // Helper to get steps
 
 interface TrackOrderStatusProps {
   order: Order;
-  allSteps: OrderStatusStep[];
+  // allSteps: OrderStatus[]; // This prop might be redundant if we derive from order.orderType
 }
 
-const stepIcons: Record<OrderStatusStep, React.ElementType> = {
-  "Order Confirmed": CheckCircle,
-  "Preparing": Loader2,
-  "Searching for Driver": PackageSearch,
-  "Assigned to Driver": PackageCheck,
-  "Out for Delivery": Truck,
+// Icons can be made more dynamic based on order type if needed
+const stepIcons: Record<OrderStatus, React.ElementType> = {
+  "Order Placed": CheckCircle,
+  "Being Prepared": Loader2,
+  "Searching for Driver": PackageSearch, // Specific to some delivery flows, might need adjustment
+  "Assigned to Driver": PackageCheck, // Specific to some delivery flows
+  "Out for Delivery": Truck, // Specific to delivery
+  "Delivered": PackageCheck, // Specific to delivery
+  "Table Ready": Utensils, // Specific to dine-in
+  "Completed": CheckCircle, // Generic completed, or specific for dine-in
+  // Ensure all statuses from OrderStatusDineIn and OrderStatusDelivery are covered
 };
 
-export function TrackOrderStatus({ order, allSteps }: TrackOrderStatusProps) {
+
+export function TrackOrderStatus({ order }: TrackOrderStatusProps) {
   const [currentStatusIndex, setCurrentStatusIndex] = useState(-1);
   const [isMounted, setIsMounted] = useState(false);
+  
+  const allSteps = getOrderStatusFlow(order.orderType);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -37,7 +48,7 @@ export function TrackOrderStatus({ order, allSteps }: TrackOrderStatusProps) {
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-6 animate-pulse">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(allSteps.length)].map((_, i) => (
                  <div key={i} className="flex items-center space-x-4">
                     <div className="w-8 h-8 bg-muted rounded-full"></div>
                     <div className="h-4 bg-muted rounded w-1/2"></div>
@@ -63,7 +74,7 @@ export function TrackOrderStatus({ order, allSteps }: TrackOrderStatusProps) {
           <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border -z-10 ml-[1px]"></div>
 
           {allSteps.map((step, index) => {
-            const Icon = stepIcons[step] || Circle;
+            const IconComponent = stepIcons[step] || Circle;
             const isActive = index <= currentStatusIndex;
             const isCurrent = index === currentStatusIndex;
             
@@ -76,7 +87,7 @@ export function TrackOrderStatus({ order, allSteps }: TrackOrderStatusProps) {
                   isActive ? "bg-primary border-primary text-primary-foreground" : "bg-background border-border text-muted-foreground",
                   isCurrent && "animate-pulse ring-4 ring-primary/30"
                 )}>
-                  <Icon className={cn("w-5 h-5", isCurrent && step === "Preparing" && "animate-spin")} />
+                  <IconComponent className={cn("w-5 h-5", isCurrent && step === "Being Prepared" && "animate-spin")} />
                 </div>
                 <div className="pt-1">
                   <p className={cn(

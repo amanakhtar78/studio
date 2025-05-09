@@ -1,4 +1,6 @@
-import type { BannerImage, Category, Product, Order, OrderStatusStep } from '@/types';
+import type { BannerImage, Category, Product, Order, User, OrderItemDetail, CheckoutFormData } from '@/types';
+import { DINE_IN_ORDER_STATUS_STEPS, DELIVERY_ORDER_STATUS_STEPS } from '@/types';
+
 
 export const bannerImages: BannerImage[] = [
   { id: '1', src: 'https://picsum.photos/1200/400?random=1', alt: 'Delicious Sweet Rolls', dataAiHint: 'bakery pastry' },
@@ -108,19 +110,102 @@ export const products: Product[] = [
   },
 ];
 
-export const sampleOrder: Order = {
-  id: 'ORD12345',
-  currentStatus: 'Preparing',
-  statusHistory: [
-    { status: 'Order Confirmed', timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString() },
-    { status: 'Preparing', timestamp: new Date().toISOString() },
-  ],
+export const sampleUser: User = {
+  id: 'user123',
+  email: 'test@gmail.com',
+  name: 'Test User',
+  avatarUrl: 'https://picsum.photos/seed/user123/100/100', // Placeholder avatar
 };
 
-export const orderStatusSteps: OrderStatusStep[] = [
-  "Order Confirmed",
-  "Preparing",
-  "Searching for Driver",
-  "Assigned to Driver",
-  "Out for Delivery",
+const sampleDeliveryAddress: CheckoutFormData = {
+  fullName: 'Test User',
+  phoneNumber: '+254712345678',
+  deliveryAddress: '123 Test Street, Test City',
+  pinCode: '00100',
+};
+
+export const sampleOrders: Order[] = [
+  {
+    id: 'ORD122344', // Example active order from prompt
+    userId: sampleUser.id,
+    orderType: 'delivery',
+    currentStatus: 'In Transit',
+    statusHistory: [
+      { status: 'Order Placed', timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString() },
+      { status: 'Being Prepared', timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString() },
+      { status: 'In Transit', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
+    ],
+    items: [
+      { productId: 'prod1', name: 'Classic Cinnamon Roll', quantity: 2, price: 350, imageUrl: products.find(p=>p.id==='prod1')?.imageUrl, dataAiHint: products.find(p=>p.id==='prod1')?.dataAiHint },
+      { productId: 'prod7', name: 'Espresso', quantity: 1, price: 200, imageUrl: products.find(p=>p.id==='prod7')?.imageUrl, dataAiHint: products.find(p=>p.id==='prod7')?.dataAiHint },
+    ],
+    totalAmount: (2 * 350) + 200,
+    orderDate: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+    estimatedTime: 'Approx. 10 mins remaining',
+    deliveryDetails: sampleDeliveryAddress,
+  },
+  {
+    id: 'ORD567890',
+    userId: sampleUser.id,
+    orderType: 'dine-in',
+    currentStatus: 'Being Prepared',
+    statusHistory: [
+      { status: 'Order Placed', timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString() },
+      { status: 'Being Prepared', timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
+    ],
+    items: [
+      { productId: 'prod3', name: 'Velvet Red Cake Slice', quantity: 1, price: 500, imageUrl: products.find(p=>p.id==='prod3')?.imageUrl, dataAiHint: products.find(p=>p.id==='prod3')?.dataAiHint },
+    ],
+    totalAmount: 500,
+    orderDate: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
+    estimatedTime: 'Ready in 15 mins',
+  },
+  {
+    id: 'ORD112233',
+    userId: sampleUser.id,
+    orderType: 'delivery',
+    currentStatus: 'Delivered',
+    statusHistory: [
+      { status: 'Order Placed', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() }, // 2 hours ago
+      { status: 'Being Prepared', timestamp: new Date(Date.now() - 1000 * 60 * (60 * 2 - 10)).toISOString() },
+      { status: 'In Transit', timestamp: new Date(Date.now() - 1000 * 60 * (60 * 2 - 25)).toISOString() },
+      { status: 'Delivered', timestamp: new Date(Date.now() - 1000 * 60 * (60 * 2 - 40)).toISOString() },
+    ],
+    items: [
+      { productId: 'prod5', name: 'Choco Chip Cookie', quantity: 5, price: 150, imageUrl: products.find(p=>p.id==='prod5')?.imageUrl, dataAiHint: products.find(p=>p.id==='prod5')?.dataAiHint },
+    ],
+    totalAmount: 5 * 150,
+    orderDate: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    deliveryDetails: sampleDeliveryAddress,
+  },
+    {
+    id: 'ORD445566',
+    userId: sampleUser.id,
+    orderType: 'dine-in',
+    currentStatus: 'Completed',
+    statusHistory: [
+      { status: 'Order Placed', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() }, // 2 days ago
+      { status: 'Being Prepared', timestamp: new Date(Date.now() - 1000 * 60 * (60 * 24 * 2 - 5)).toISOString() },
+      { status: 'Table Ready', timestamp: new Date(Date.now() - 1000 * 60 * (60 * 24 * 2 - 15)).toISOString() },
+      { status: 'Completed', timestamp: new Date(Date.now() - 1000 * 60 * (60 * 24 * 2 - 45)).toISOString() },
+    ],
+    items: [
+      { productId: 'prod2', name: 'Chocolate Swirl Roll', quantity: 1, price: 400, imageUrl: products.find(p=>p.id==='prod2')?.imageUrl, dataAiHint: products.find(p=>p.id==='prod2')?.dataAiHint },
+      { productId: 'prod8', name: 'Fresh Orange Juice', quantity: 1, price: 300, imageUrl: products.find(p=>p.id==='prod8')?.imageUrl, dataAiHint: products.find(p=>p.id==='prod8')?.dataAiHint },
+    ],
+    totalAmount: 400 + 300,
+    orderDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+  },
 ];
+
+// The old sampleOrder is no longer needed as we have sampleOrders array
+// export const sampleOrder: Order = { ... }; 
+
+// These are now exported from types/index.ts but kept here for reference if needed by other logic
+export const orderStatusStepsDineIn = DINE_IN_ORDER_STATUS_STEPS;
+export const orderStatusStepsDelivery = DELIVERY_ORDER_STATUS_STEPS;
+
+// A general helper to get steps based on order type, if needed by components directly
+export const getOrderStatusFlow = (orderType: OrderType) => {
+  return orderType === 'dine-in' ? DINE_IN_ORDER_STATUS_STEPS : DELIVERY_ORDER_STATUS_STEPS;
+};
