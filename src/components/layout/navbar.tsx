@@ -5,50 +5,51 @@ import Link from 'next/link';
 import { SweetRollsLogo } from '@/components/icons/sweet-rolls-logo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { categories } from '@/lib/mock-data'; 
-import { Menu, ShoppingCart } from 'lucide-react';
+import { Menu, ShoppingCart, Search } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { useCart } from '@/context/cart-context';
+import { useSearch } from '@/context/search-context';
+import { useRouter, usePathname } from 'next/navigation';
 
 export function Navbar() {
   const [isMounted, setIsMounted] = useState(false);
   const { totalItemsCount } = useCart();
+  const { searchQuery, setSearchQuery } = useSearch();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const handleScrollToCategory = (slug: string) => {
-    const element = document.getElementById(slug);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (pathname !== '/') {
+      router.push('/');
+      // Wait for navigation and page to potentially render, then scroll
+      setTimeout(() => {
+        const element = document.getElementById(slug);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500); // Adjust delay if needed
+    } else {
+      const element = document.getElementById(slug);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
-  if (!isMounted) {
-    return (
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 max-w-screen-2xl items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <SweetRollsLogo />
-            <span className="font-bold text-xl">Zahra Sweet Rolls</span>
-          </Link>
-          <nav className="hidden md:flex items-center space-x-2 lg:space-x-4">
-             <Button variant="ghost" disabled>Loading...</Button>
-          </nav>
-          <div className="flex items-center">
-            <Button variant="ghost" size="icon" className="relative mr-2" disabled>
-              <ShoppingCart className="h-5 w-5" />
-            </Button>
-            <div className="md:hidden">
-              <Button variant="ghost" size="icon" disabled><Menu className="h-6 w-6" /></Button>
-            </div>
-          </div>
-        </div>
-      </header>
-    );
-  }
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+     // If not on homepage, navigate to homepage to show search results
+    if (pathname !== '/') {
+      router.push('/');
+    }
+  };
 
   const navLinks = (closeSheet?: () => void) => (
     <>
@@ -76,6 +77,37 @@ export function Navbar() {
       </Link>
     </>
   );
+  
+  if (!isMounted) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-6">
+          <Link href="/" className="flex items-center space-x-2">
+            <SweetRollsLogo />
+            <span className="font-bold text-xl">Zahra Sweet Rolls</span>
+          </Link>
+          <div className="flex-1 max-w-xs mx-4 hidden md:block">
+             <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input type="search" placeholder="Search products..." className="pl-9 h-9 bg-muted/50" disabled />
+            </div>
+          </div>
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+             <Button variant="ghost" disabled>Loading...</Button>
+          </nav>
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" className="relative mr-2" disabled>
+              <ShoppingCart className="h-5 w-5" />
+            </Button>
+            <div className="md:hidden">
+              <Button variant="ghost" size="icon" disabled><Menu className="h-6 w-6" /></Button>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -86,6 +118,19 @@ export function Navbar() {
             Zahra Sweet Rolls
           </span>
         </Link>
+
+        <div className="flex-1 max-w-sm mx-4 hidden md:block">
+             <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    type="search" 
+                    placeholder="Search products..." 
+                    className="pl-9 h-9" 
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                />
+            </div>
+        </div>
 
         <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
           {navLinks()}
@@ -112,11 +157,19 @@ export function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] bg-background p-4">
+                <div className="relative mt-4 mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        type="search" 
+                        placeholder="Search products..." 
+                        className="pl-9 h-9"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
+                </div>
                 <SheetTrigger asChild> 
                   <nav className="flex flex-col space-y-3 pt-6">
                     {navLinks(() => {
-                      // This is a bit of a hack to close the sheet.
-                      // A more robust solution might involve managing sheet open state here.
                       const closeButton = document.querySelector('[data-radix-dialog-close]') as HTMLElement;
                       closeButton?.click();
                     })}
