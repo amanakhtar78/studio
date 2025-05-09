@@ -65,6 +65,11 @@ export function Navbar() {
     router.push('/'); // Redirect to home on logout
   };
 
+  const handleEditProfileClick = (closeSheet?: () => void) => {
+    closeSheet?.();
+    router.push('/edit-profile');
+  };
+
 
   const navLinks = (closeSheet?: () => void) => (
     <>
@@ -141,7 +146,7 @@ export function Navbar() {
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatarUrl} alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -159,7 +164,7 @@ export function Navbar() {
                   <Package className="mr-2 h-4 w-4" />
                   <span>My Orders</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled> {/* Placeholder */}
+                <DropdownMenuItem onClick={() => handleEditProfileClick()}>
                   <Edit3 className="mr-2 h-4 w-4" />
                   <span>Edit Profile</span>
                 </DropdownMenuItem>
@@ -186,10 +191,36 @@ export function Navbar() {
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] bg-background p-4">
                 <nav className="flex flex-col space-y-2 pt-6">
+                   {isAuthenticated && user && (
+                    <div className="px-2 py-1 mb-2">
+                       <p className="text-sm font-medium leading-none">{user.name}</p>
+                       <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                  )}
                   <SheetClose asChild>
                     <div>{navLinks(() => {})}</div>
                   </SheetClose>
                   
+                  {isAuthenticated && user && (
+                    <>
+                      <SheetClose asChild>
+                        <Button variant="ghost" onClick={() => router.push('/my-orders')} className="w-full justify-start">
+                            <Package className="mr-2 h-4 w-4" /> My Orders
+                        </Button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                         <Button variant="ghost" onClick={() => handleEditProfileClick()} className="w-full justify-start">
+                            <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
+                        </Button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button variant="ghost" onClick={() => handleLogout()} className="w-full justify-start text-destructive hover:text-destructive">
+                            <LogOut className="mr-2 h-4 w-4" /> Logout
+                        </Button>
+                     </SheetClose>
+                    </>
+                   )}
+
                   {!isAuthenticated && !authLoading && (
                     <SheetClose asChild>
                       <Button variant="outline" onClick={openAuthModal} className="w-full justify-start">
@@ -197,13 +228,6 @@ export function Navbar() {
                       </Button>
                     </SheetClose>
                   )}
-                   {isAuthenticated && user && ( // Add logout to mobile menu too
-                     <SheetClose asChild>
-                        <Button variant="ghost" onClick={() => handleLogout()} className="w-full justify-start text-destructive hover:text-destructive">
-                            <LogOut className="mr-2 h-4 w-4" /> Logout
-                        </Button>
-                     </SheetClose>
-                   )}
                 </nav>
               </SheetContent>
             </Sheet>

@@ -26,11 +26,23 @@ export interface Product {
 }
 
 // --- START AUTH and USER TYPES ---
+export type AddressType = 'home' | 'office' | 'other';
+
+export interface UserAddress {
+  street: string;
+  city: string;
+  pinCode: string;
+  addressType: AddressType;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   avatarUrl?: string;
+  phoneNumber?: string;
+  alternatePhoneNumber?: string;
+  address?: UserAddress;
 }
 // --- END AUTH and USER TYPES ---
 
@@ -68,7 +80,7 @@ export interface Order {
   totalAmount: number;
   orderDate: string; // ISO string
   estimatedTime?: string; // e.g., "10 mins", "Ready by 7:00 PM"
-  deliveryDetails?: CheckoutFormData; // If delivery
+  deliveryDetails?: CheckoutFormData; // If delivery - This is specific to an order
 }
 // --- END ORDER TYPES ---
 
@@ -82,11 +94,12 @@ export interface CartItemWithProduct extends Product {
   quantity: number;
 }
 
+// This is for one-off checkout, distinct from User's primary address
 export interface CheckoutFormData {
-  fullName: string;
-  phoneNumber: string;
-  deliveryAddress: string;
-  pinCode: string;
+  fullName: string; // Could be pre-filled from User.name
+  phoneNumber: string; // Could be pre-filled from User.phoneNumber
+  deliveryAddress: string; // This is the full street address for delivery for THIS order
+  pinCode: string; // Pin code for THIS order
 }
 
 export interface TimelineEvent {

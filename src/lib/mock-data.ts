@@ -115,18 +115,28 @@ export const sampleUser: User = {
   email: 'test@gmail.com',
   name: 'Test User',
   avatarUrl: 'https://picsum.photos/seed/user123/100/100', // Placeholder avatar
+  phoneNumber: '+254700111222',
+  alternatePhoneNumber: '+254700333444',
+  address: {
+    street: '456 Mock Avenue, Suite 7B',
+    city: 'Mock City',
+    pinCode: '00200',
+    addressType: 'home',
+  },
 };
 
-const sampleDeliveryAddress: CheckoutFormData = {
-  fullName: 'Test User',
-  phoneNumber: '+254712345678',
-  deliveryAddress: '123 Test Street, Test City',
-  pinCode: '00100',
+// This CheckoutFormData is used for the order's delivery details specifically.
+const sampleOrderDeliveryAddress: CheckoutFormData = {
+  fullName: 'Test User', // Could be different from User.name if ordering for someone else
+  phoneNumber: '+254712345678', // Could be different from User.phoneNumber
+  deliveryAddress: '123 Test Street, Test City', // Specific address for this order
+  pinCode: '00100', // Specific pin code for this order
 };
+
 
 export const sampleOrders: Order[] = [
   {
-    id: 'ORD122344', // Example active order from prompt
+    id: 'ORD122344', 
     userId: sampleUser.id,
     orderType: 'delivery',
     currentStatus: 'In Transit',
@@ -142,7 +152,7 @@ export const sampleOrders: Order[] = [
     totalAmount: (2 * 350) + 200,
     orderDate: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     estimatedTime: 'Approx. 10 mins remaining',
-    deliveryDetails: sampleDeliveryAddress,
+    deliveryDetails: sampleOrderDeliveryAddress,
   },
   {
     id: 'ORD567890',
@@ -176,7 +186,7 @@ export const sampleOrders: Order[] = [
     ],
     totalAmount: 5 * 150,
     orderDate: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    deliveryDetails: sampleDeliveryAddress,
+    deliveryDetails: sampleOrderDeliveryAddress,
   },
     {
     id: 'ORD445566',
@@ -197,9 +207,6 @@ export const sampleOrders: Order[] = [
     orderDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
   },
 ];
-
-// The old sampleOrder is no longer needed as we have sampleOrders array
-// export const sampleOrder: Order = { ... }; 
 
 // These are now exported from types/index.ts but kept here for reference if needed by other logic
 export const orderStatusStepsDineIn = DINE_IN_ORDER_STATUS_STEPS;

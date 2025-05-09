@@ -3,33 +3,45 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
-import type { User } from '@/types';
+import type { User, UserAddress, AddressType } from '@/types';
 import { sampleUser } from '@/lib/mock-data'; // For mock login
 import { useToast } from '@/hooks/use-toast';
+
+// Define the shape of signup data including new fields
+interface SignupData {
+  name: string;
+  email: string;
+  password?: string; // Password might not be needed if using OAuth, but good for traditional signup
+  phoneNumber?: string;
+  addressStreet?: string;
+  addressCity?: string;
+  addressPinCode?: string;
+  addressType?: AddressType;
+}
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<boolean>; // Simulate async login
+  login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  // signup: (email: string, pass: string, name: string) => Promise<boolean>; // For future use
+  signup: (data: SignupData) => Promise<boolean>; // Updated signup signature
+  updateUserProfile: (updatedProfileData: Partial<User>) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Check for existing session
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Simulate checking for an existing session on mount
   useEffect(() => {
-    // In a real app, you'd check localStorage/sessionStorage or make an API call
     const storedUser = localStorage.getItem('sweetrolls-user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
       } catch (error) {
         console.error("Failed to parse stored user:", error);
         localStorage.removeItem('sweetrolls-user');
@@ -40,9 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(async (email: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000)); 
-    if (email === sampleUser.email && pass === 'test') { // Mock credentials
+    if (email.toLowerCase() === sampleUser.email.toLowerCase() && pass === 'test') {
       setUser(sampleUser);
       localStorage.setItem('sweetrolls-user', JSON.stringify(sampleUser));
       toast({ title: 'Login Successful', description: `Welcome back, ${sampleUser.name}!` });
@@ -60,18 +71,84 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
   }, [toast]);
 
-  // const signup = useCallback(async (email: string, pass: string, name: string): Promise<boolean> => {
-  //   // Mock signup
-  //   setIsLoading(true);
-  //   await new Promise(resolve => setTimeout(resolve, 1000));
-  //   const newUser: User = { id: `user-${Date.now()}`, email, name, avatarUrl: `https://picsum.photos/seed/${name}/100/100` };
-  //   setUser(newUser);
-  //   localStorage.setItem('sweetrolls-user', JSON.stringify(newUser));
-  //   toast({ title: 'Account Created', description: `Welcome, ${name}!` });
-  //   setIsLoading(false);
-  //   return true;
-  // }, [toast]);
+  const signup = useCallback(async (data: SignupData): Promise<boolean> => {
+    setIsLoading(true);
+    console.log("Mock Signup attempt with data:", data);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // In a real app, you would send this data to your backend to create a new user.
+    // Then, the backend would return the new user object or a session token.
+    // For this mock, we will simulate a successful signup by logging in the sampleUser
+    // IF the email provided is sampleUser's email. This allows testing the UI flow.
+    
+    if (data.email.toLowerCase() === sampleUser.email.toLowerCase()) {
+      // Simulate that signup was successful and the user is now logged in as sampleUser.
+      // We could potentially create a new user object here based on `data` and save it.
+      // For simplicity, we'll just use sampleUser.
+      setUser(sampleUser);
+      localStorage.setItem('sweetrolls-user', JSON.stringify(sampleUser));
+      toast({ title: 'Account Created!', description: `Welcome, ${data.name}! Please complete your profile if needed.` });
+      setIsLoading(false);
+      return true;
+    } else {
+      // Simulate a generic new user creation if email is not sampleUser's
+      const newMockUserId = `user-${Date.now()}`;
+      const newMockUser: User = {
+          id: newMockUserId,
+          name: data.name,
+          email: data.email,
+          avatarUrl: `https://picsum.photos/seed/${newMockUserId}/100/100`,
+          phoneNumber: data.phoneNumber,
+          address: data.addressStreet && data.addressCity && data.addressPinCode && data.addressType ? {
+              street: data.addressStreet,
+              city: data.addressCity,
+              pinCode: data.addressPinCode,
+              addressType: data.addressType,
+          } : undefined,
+      };
+      setUser(newMockUser);
+      localStorage.setItem('sweetrolls-user', JSON.stringify(newMockUser));
+      toast({ title: 'Account Created!', description: `Welcome, ${newMockUser.name}!` });
+      setIsLoading(false);
+      return true;
+    }
+    // toast({ title: 'Signup Failed', description: 'Could not create account (mock error).', variant: 'destructive' });
+    // setIsLoading(false);
+    // return false;
+  }, [toast]);
 
+  const updateUserProfile = useCallback(async (updatedProfileData: Partial<User>): Promise<boolean> => {
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+
+    setUser(currentUser => {
+      if (!currentUser) return null;
+      
+      const newUser = { ...currentUser };
+
+      // Merge top-level fields
+      for (const key in updatedProfileData) {
+        if (key !== 'address' && updatedProfileData.hasOwnProperty(key)) {
+          (newUser as any)[key] = (updatedProfileData as any)[key];
+        }
+      }
+      
+      // Deep merge address
+      if (updatedProfileData.address) {
+        newUser.address = {
+          ...(currentUser.address || {} as UserAddress), // Ensure address object exists
+          ...updatedProfileData.address,
+        };
+      }
+      
+      localStorage.setItem('sweetrolls-user', JSON.stringify(newUser));
+      return newUser;
+    });
+
+    toast({ title: 'Profile Updated', description: 'Your profile information has been saved.' });
+    setIsLoading(false);
+    return true;
+  }, [toast]);
 
   const isAuthenticated = !!user;
 
@@ -81,8 +158,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     login,
     logout,
-    // signup,
-  }), [user, isAuthenticated, isLoading, login, logout]);
+    signup,
+    updateUserProfile,
+  }), [user, isAuthenticated, isLoading, login, logout, signup, updateUserProfile]);
 
   return (
     <AuthContext.Provider value={value}>
