@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/cart-context';
+import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import type { CheckoutFormData } from '@/types';
+import { useEffect, useState }
+from 'react';
 
 import {
   Form,
@@ -26,6 +29,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 
 const checkoutFormSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
@@ -36,6 +41,7 @@ const checkoutFormSchema = z.object({
 
 export default function CheckoutPage() {
   const { items, getCartItemsWithDetails, updateItemQuantity, cartSubtotal, clearCart } = useCart();
+  const { user, isAuthenticated } = useAuth();
   const cartItemsWithDetails = getCartItemsWithDetails();
   const router = useRouter();
   const { toast } = useToast();
@@ -50,6 +56,51 @@ export default function CheckoutPage() {
     },
   });
 
+  // true = use profile address, false = use new address form
+  const [useProfileAddress, setUseProfileAddress] = useState<boolean>(false); 
+
+  useEffect(() => {
+    // This effect runs when user/auth status changes, or when useProfileAddress toggle changes.
+    if (isAuthenticated && user) {
+      if (user.address && useProfileAddress) {
+        // User is logged in, has an address, and wants to use it.
+        form.reset({
+          fullName: user.name || '',
+          phoneNumber: user.phoneNumber || '',
+          deliveryAddress: user.address.street,
+          pinCode: user.address.pinCode,
+        });
+      } else {
+        // User is logged in, but either has no address, or wants to enter a new one.
+        // Pre-fill name and phone from profile, clear address fields for new entry.
+        form.reset({
+          fullName: user.name || '',
+          phoneNumber: user.phoneNumber || '',
+          deliveryAddress: '', // Clear for new entry
+          pinCode: '',         // Clear for new entry
+        });
+      }
+    } else {
+      // Not authenticated, clear all fields.
+      form.reset({
+        fullName: '',
+        phoneNumber: '',
+        deliveryAddress: '',
+        pinCode: '',
+      });
+    }
+  }, [user, isAuthenticated, useProfileAddress, form]);
+
+  useEffect(() => {
+    // Set initial state for useProfileAddress when component mounts or user/auth changes
+    if (isAuthenticated && user?.address) {
+      setUseProfileAddress(true); // Default to using profile address if available
+    } else {
+      setUseProfileAddress(false); // Otherwise, default to new address form
+    }
+  }, [isAuthenticated, user]);
+
+
   const onSubmit = (data: CheckoutFormData) => {
     console.log('Order placed:', {
       customerDetails: data,
@@ -61,7 +112,9 @@ export default function CheckoutPage() {
       description: 'Your delicious treats are on their way!',
     });
     clearCart();
-    router.push('/track-order'); // Navigate to a mock tracking page
+    // Simulate order creation and pass a mock order ID
+    const mockOrderId = `ORD${Date.now().toString().slice(-6)}`; 
+    router.push(`/my-orders/${mockOrderId}?new=true`); // Navigate to order detail page
   };
 
   if (items.length === 0) {
@@ -121,9 +174,38 @@ export default function CheckoutPage() {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-2xl">Delivery Details</CardTitle>
-              <CardDescription>Please fill in your delivery information.</CardDescription>
+              <CardDescription>
+                {isAuthenticated && user?.address ? 'Choose your delivery address or enter a new one.' : 'Please fill in your delivery information.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
+              {isAuthenticated && user?.address && (
+                <RadioGroup
+                  value={useProfileAddress ? "profile" : "new"}
+                  onValueChange={(value) => {
+                    setUseProfileAddress(value === "profile");
+                  }}
+                  className="mb-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="profile" id="rProfileAddress" />
+                    <Label htmlFor="rProfileAddress" className="cursor-pointer">Use my saved address:</Label>
+                  </div>
+                  {useProfileAddress && (
+                    <Card className="bg-muted/50 p-3 text-sm ml-7 my-2 border-border/70 shadow-sm">
+                      <p><strong>{user.name}</strong></p>
+                      <p>{user.phoneNumber || 'No phone on file'}</p>
+                      <p>{user.address!.street}, {user.address!.city}</p>
+                      <p>{user.address!.pinCode} <span className="capitalize">({user.address!.addressType})</span></p>
+                    </Card>
+                  )}
+                  <div className="flex items-center space-x-2 mt-2">
+                    <RadioGroupItem value="new" id="rNewAddress" />
+                    <Label htmlFor="rNewAddress" className="cursor-pointer">Enter a new delivery address</Label>
+                  </div>
+                </RadioGroup>
+              )}
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
@@ -133,7 +215,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Zahra Ali" {...field} />
+                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={useProfileAddress && !!user?.name} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -146,7 +228,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="e.g. +254712345678" {...field} />
+                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={useProfileAddress && !!user?.phoneNumber} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -159,7 +241,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Delivery Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. 123 Bakery St, Apt 4B, Nairobi" {...field} />
+                          <Input placeholder="e.g. 123 Bakery St, Apt 4B, Nairobi" {...field} disabled={useProfileAddress && !!user?.address?.street}/>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -172,7 +254,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Pin Code / Postal Code</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. 00100" {...field} />
+                          <Input placeholder="e.g. 00100" {...field} disabled={useProfileAddress && !!user?.address?.pinCode} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -190,3 +272,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
