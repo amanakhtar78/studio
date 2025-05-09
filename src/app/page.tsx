@@ -89,6 +89,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col">
+      {/* havt to make it sticky */}
       <div className="container max-w-screen-2xl px-4 md:px-6 py-8 md:py-12">
         <Banner images={bannerImages} />
       </div>
