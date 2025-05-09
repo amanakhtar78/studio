@@ -5,19 +5,16 @@ import Link from 'next/link';
 import { SweetRollsLogo } from '@/components/icons/sweet-rolls-logo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { categories } from '@/lib/mock-data'; 
-import { Menu, ShoppingCart, Search } from 'lucide-react';
+import { Menu, ShoppingCart } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { useCart } from '@/context/cart-context';
-import { useSearch } from '@/context/search-context';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function Navbar() {
   const [isMounted, setIsMounted] = useState(false);
   const { totalItemsCount } = useCart();
-  const { searchQuery, setSearchQuery } = useSearch();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -40,14 +37,6 @@ export function Navbar() {
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
       }
-    }
-  };
-
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-     // If not on homepage, navigate to homepage to show search results
-    if (pathname !== '/') {
-      router.push('/');
     }
   };
 
@@ -86,12 +75,7 @@ export function Navbar() {
             <SweetRollsLogo />
             <span className="font-bold text-xl">Zahra Sweet Rolls</span>
           </Link>
-          <div className="flex-1 max-w-xs mx-4 hidden md:block">
-             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input type="search" placeholder="Search products..." className="pl-9 h-9 bg-muted/50" disabled />
-            </div>
-          </div>
+          {/* Removed skeleton search bar */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
              <Button variant="ghost" disabled>Loading...</Button>
           </nav>
@@ -119,18 +103,7 @@ export function Navbar() {
           </span>
         </Link>
 
-        <div className="flex-1 max-w-sm mx-4 hidden md:block">
-             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    type="search" 
-                    placeholder="Search products..." 
-                    className="pl-9 h-9" 
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                />
-            </div>
-        </div>
+        {/* Removed desktop search bar */}
 
         <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
           {navLinks()}
@@ -157,16 +130,7 @@ export function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] bg-background p-4">
-                <div className="relative mt-4 mb-2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        type="search" 
-                        placeholder="Search products..." 
-                        className="pl-9 h-9"
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                    />
-                </div>
+                {/* Removed mobile search bar from sheet content */}
                 <SheetTrigger asChild> 
                   <nav className="flex flex-col space-y-3 pt-6">
                     {navLinks(() => {
@@ -183,3 +147,4 @@ export function Navbar() {
     </header>
   );
 }
+

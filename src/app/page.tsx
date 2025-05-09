@@ -7,19 +7,20 @@ import { Separator } from '@/components/ui/separator';
 import { bannerImages, categories, products } from '@/lib/mock-data';
 import { useSearch } from '@/context/search-context';
 import { useEffect, useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 export default function HomePage() {
-  const { searchQuery } = useSearch();
+  const { searchQuery, setSearchQuery } = useSearch();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // If there's a search query, we display all products matching the search,
-  // potentially grouped by category or just as a flat list.
-  // For this iteration, we'll filter within each category section.
-  // If no search query, display all categories and their products.
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
 
   const allProductsFilteredBySearch = searchQuery && searchQuery.trim() !== '' 
     ? products.filter(product => 
@@ -45,6 +46,20 @@ export default function HomePage() {
       <div className="container max-w-screen-2xl px-4 md:px-6 py-6 md:py-8">
         <Banner images={bannerImages} />
       </div>
+
+      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search for delicious treats..."
+            className="pl-10 pr-4 py-2 text-base md:text-lg w-full h-12 rounded-md border-2 border-input focus:border-primary focus-visible:ring-primary/20"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            aria-label="Search products"
+          />
+        </div>
+      </div>
       
       <CategorySelector categories={categories} />
       
@@ -59,7 +74,7 @@ export default function HomePage() {
         <div key={category.id}>
           <ProductList 
             category={category} 
-            products={products} // Pass all products, ProductList will filter by category AND search
+            products={products} 
             searchQuery={searchQuery} 
           />
           {index < categoriesToDisplay.length - 1 && (
@@ -72,3 +87,4 @@ export default function HomePage() {
     </div>
   );
 }
+
