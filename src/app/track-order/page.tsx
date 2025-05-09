@@ -71,7 +71,8 @@ export default function TrackOrderPage() {
   );
 }
 
-export const metadata = {
-  title: 'Track Your Order - Zahra Sweet Rolls',
-  description: 'Log in to check the status of your order from Zahra Sweet Rolls.',
-};
+// Metadata removed as it cannot be exported from a client component.
+// export const metadata = {
+//   title: 'Track Your Order - Zahra Sweet Rolls',
+//   description: 'Log in to check the status of your order from Zahra Sweet Rolls.',
+// };

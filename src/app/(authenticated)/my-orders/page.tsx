@@ -101,7 +101,8 @@ export default function MyOrdersPage() {
   );
 }
 
-export const metadata = {
-  title: 'My Orders - Zahra Sweet Rolls',
-  description: 'View your order history and track active orders from Zahra Sweet Rolls.',
-};
+// Metadata removed as it cannot be exported from a client component.
+// export const metadata = {
+//   title: 'My Orders - Zahra Sweet Rolls',
+//   description: 'View your order history and track active orders from Zahra Sweet Rolls.',
+// };
