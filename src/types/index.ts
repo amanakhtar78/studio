@@ -36,3 +36,19 @@ export interface Order {
   currentStatus: OrderStatusStep;
   statusHistory: { status: OrderStatusStep; timestamp: string }[]; // Using string for simplicity, ideally Date
 }
+
+export interface CartItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface CartItemWithProduct extends Product {
+  quantity: number;
+}
+
+export interface CheckoutFormData {
+  fullName: string;
+  phoneNumber: string;
+  deliveryAddress: string;
+  pinCode: string;
+}
