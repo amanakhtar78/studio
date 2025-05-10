@@ -1,7 +1,7 @@
 
 'use client';
 import { Banner } from '@/components/banner';
-import { CategorySelector } from '@/components/category-selector';
+// import { CategorySelector } from '@/components/category-selector'; // Keep for now, maybe remove later
 import { ProductList } from '@/components/product-list';
 import { Separator } from '@/components/ui/separator';
 import { bannerImages } from '@/lib/mock-data'; 
@@ -9,26 +9,28 @@ import { useSearch } from '@/context/search-context';
 import { useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, AlertTriangle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, AlertTriangle, Loader2, FilterIcon } from 'lucide-react';
 import { AboutTimeline } from '@/components/about-timeline';
 import { WhyChooseUs } from '@/components/why-choose-us';
+import { FilterSidebar } from '@/components/filter-sidebar';
 
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '@/store/store';
 import { fetchProducts } from '@/store/slices/productSlice';
 import { fetchCategories } from '@/store/slices/categorySlice';
-import type { Product, Category as CategoryType } from '@/types'; // Renamed Category to CategoryType to avoid conflict
+import type { Product, Category as CategoryType } from '@/types'; 
 
 export default function HomePage() {
   const { searchQuery, setSearchQuery } = useSearch();
   const [isMounted, setIsMounted] = useState(false);
 
   // Filter and Sort States
-  const [selectedGlobalCategory, setSelectedGlobalCategory] = useState<string>('all'); // Stores category NAME or 'all'
+  const [selectedGlobalCategory, setSelectedGlobalCategory] = useState<string>('all'); 
   const [sortOption, setSortOption] = useState<string>('relevance');
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
 
 
   const dispatch = useDispatch<AppDispatch>();
@@ -51,6 +53,15 @@ export default function HomePage() {
 
   const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => setMinPrice(e.target.value);
   const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => setMaxPrice(e.target.value);
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedGlobalCategory('all');
+    setSortOption('relevance');
+    setMinPrice('');
+    setMaxPrice('');
+    setIsFilterSidebarOpen(false); // Close sidebar after clearing
+  };
 
   const processedProducts = useMemo(() => {
     let products = [...allProducts];
@@ -92,7 +103,7 @@ export default function HomePage() {
       case 'rating-desc':
         products.sort((a, b) => (b.rating?.rate || 0) - (a.rating?.rate || 0));
         break;
-      default: // 'relevance' or unknown
+      default: 
         break;
     }
     return products;
@@ -106,15 +117,11 @@ export default function HomePage() {
     return relevantCategories
       .map(category => {
         const productsForCategory = processedProducts.filter(p => p.category.toLowerCase() === category.name.toLowerCase());
-        // A section is displayable if:
-        // 1. A specific global category is chosen, and it's this one. ProductList will show "no items for filter" if productsForCategory is empty.
-        // 2. No specific global category is chosen ('all'), and this category has products OR no filters are active.
         const hasActiveFilters = searchQuery.trim() !== '' || minPrice !== '' || maxPrice !== '' || selectedGlobalCategory !== 'all' || sortOption !== 'relevance';
 
         if (selectedGlobalCategory !== 'all') {
           return { category, products: productsForCategory, shouldRender: category.name.toLowerCase() === selectedGlobalCategory.toLowerCase() };
         } else {
-          // if 'all' categories selected, show section if it has products, or if no filters active (to show all original sections)
           return { category, products: productsForCategory, shouldRender: productsForCategory.length > 0 || !hasActiveFilters };
         }
       })
@@ -135,7 +142,7 @@ export default function HomePage() {
   const hasActiveFilters = searchQuery.trim() !== '' || minPrice !== '' || maxPrice !== '' || selectedGlobalCategory !== 'all' || sortOption !== 'relevance';
 
 
-  if (isLoadingData && !isMounted) { // Show loading if not mounted and still loading
+  if (isLoadingData && !isMounted) { 
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -166,23 +173,23 @@ export default function HomePage() {
         <Banner images={bannerImages} />
       </div>
 
-      {/* Search and Filter Section */}
+      {/* Search and Filter Trigger Section */}
       <div className="container max-w-screen-2xl mx-auto px-2 md:px-4 py-3 md:py-4 sticky top-16 bg-background/95 backdrop-blur-sm z-40 shadow-sm -mx-2 md:-mx-4 site-padding-override-sm">
          <style jsx global>{`
             .site-padding-override-sm {
-              padding-left: 0.5rem !important; /* Corresponds to px-2 */
-              padding-right: 0.5rem !important; /* Corresponds to px-2 */
+              padding-left: 0.5rem !important; 
+              padding-right: 0.5rem !important; 
             }
-            @media (min-width: 768px) { /* md breakpoint */
+            @media (min-width: 768px) { 
               .site-padding-override-sm {
-                padding-left: 1rem !important; /* Corresponds to md:px-4 */
-                padding-right: 1rem !important; /* Corresponds to md:px-4 */
+                padding-left: 1rem !important; 
+                padding-right: 1rem !important; 
               }
             }
           `}</style>
-        <div className="flex flex-col md:flex-row gap-3 md:items-end">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Search Input */}
-          <div className="relative flex-grow w-full md:max-w-xs lg:max-w-sm">
+          <div className="relative flex-grow">
             <Label htmlFor="search-input" className="sr-only">Search products</Label>
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -195,60 +202,38 @@ export default function HomePage() {
               aria-label="Search products"
             />
           </div>
-
-          {/* Filters Group */}
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto md:flex-grow md:justify-start md:items-end">
-            <div className="flex-grow sm:flex-grow-0 sm:w-40">
-              <Label htmlFor="sort-select" className="text-xs font-medium text-muted-foreground">Sort by</Label>
-              <Select value={sortOption} onValueChange={setSortOption}>
-                <SelectTrigger id="sort-select" className="h-10 text-sm mt-0.5">
-                  <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Relevance</SelectItem>
-                  <SelectItem value="name-asc">Name: A-Z</SelectItem>
-                  <SelectItem value="name-desc">Name: Z-A</SelectItem>
-                  <SelectItem value="price-asc">Price: Low-High</SelectItem>
-                  <SelectItem value="price-desc">Price: High-Low</SelectItem>
-                  <SelectItem value="rating-desc">Rating: High-Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {categoryStatus === 'succeeded' && allCategories.length > 0 && (
-              <div className="flex-grow sm:flex-grow-0 sm:w-40">
-                <Label htmlFor="category-filter-select" className="text-xs font-medium text-muted-foreground">Category</Label>
-                <Select value={selectedGlobalCategory} onValueChange={setSelectedGlobalCategory}>
-                  <SelectTrigger id="category-filter-select" className="h-10 text-sm mt-0.5">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {allCategories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-             <div className="flex-grow sm:flex-grow-0 sm:w-28">
-              <Label htmlFor="min-price" className="text-xs font-medium text-muted-foreground">Min Price</Label>
-              <Input id="min-price" type="number" placeholder="KES" value={minPrice} onChange={handleMinPriceChange} className="h-10 text-sm mt-0.5" min="0" />
-            </div>
-            <div className="flex-grow sm:flex-grow-0 sm:w-28">
-              <Label htmlFor="max-price" className="text-xs font-medium text-muted-foreground">Max Price</Label>
-              <Input id="max-price" type="number" placeholder="KES" value={maxPrice} onChange={handleMaxPriceChange} className="h-10 text-sm mt-0.5" min="0"/>
-            </div>
-          </div>
+          {/* Filter Trigger Button */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setIsFilterSidebarOpen(true)} 
+            className="h-10 w-10 flex-shrink-0"
+            aria-label="Open filters"
+          >
+            <FilterIcon className="h-4.5 w-4.5" />
+          </Button>
         </div>
       </div>
       
-      {/* Category Quick Jump - this might be less useful if global category filter is prominent */}
-      {/* <CategorySelector categories={allCategories} /> */}
+      <FilterSidebar
+        isOpen={isFilterSidebarOpen}
+        onOpenChange={setIsFilterSidebarOpen}
+        sortOption={sortOption}
+        setSortOption={setSortOption}
+        selectedGlobalCategory={selectedGlobalCategory}
+        setSelectedGlobalCategory={setSelectedGlobalCategory}
+        allCategories={allCategories}
+        minPrice={minPrice}
+        setMinPrice={setMinPrice}
+        maxPrice={maxPrice}
+        setMaxPrice={setMaxPrice}
+        onClearFilters={handleClearFilters}
+        categoryStatus={categoryStatus}
+      />
       
       {/* Product Display Area */}
-      <div className="mt-0"> {/* Removed top margin as sticky filter bar handles spacing */}
-        {isLoadingData && isMounted && ( // Show loading if mounted and still loading subsequent data
+      <div className="mt-0"> 
+        {isLoadingData && isMounted && (
             <div className="flex flex-col items-center justify-center min-h-[30vh]">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="mt-3 text-muted-foreground text-sm">Applying filters...</p>
@@ -268,7 +253,7 @@ export default function HomePage() {
             <ProductList
               category={category}
               products={productsForSection}
-              className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"} // Adjusted pt for first item
+              className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"} 
             />
             {index < displayableSections.length - 1 && (
               <div className="container max-w-screen-2xl px-2 md:px-4">
@@ -302,4 +287,3 @@ export default function HomePage() {
     </div>
   );
 }
-
