@@ -54,16 +54,18 @@ export function ProductCard({ product }: ProductCardProps) {
         <CardDescription className="text-xs text-muted-foreground mb-1.5 h-8 overflow-hidden text-ellipsis"> {/* Reduced font size and height */}
           {product.description}
         </CardDescription>
-        <p className="text-base font-bold text-primary mb-1.5">KES {product.price.toLocaleString()}</p> {/* Reduced font size */}
-        <Badge variant={stockAvailable ? 'default' : 'destructive'} className={`${stockAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white text-xs`}>
-          {stockAvailable ? 'In Stock' : 'Out of Stock'}
-        </Badge>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-lg font-bold text-primary">KES {product.price.toLocaleString()}</p> {/* Increased font size and made bold */}
+          <Badge variant={stockAvailable ? 'default' : 'destructive'} className={`${stockAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white text-xs px-2 py-0.5`}>
+            {stockAvailable ? 'In Stock' : 'Out of Stock'}
+          </Badge>
+        </div>
       </CardContent>
-      <CardFooter className="p-3 pt-0"> {/* Reduced padding */}
+      <CardFooter className="p-3 pt-2 mt-auto"> {/* Reduced padding, added pt-2 and mt-auto */}
         {quantityInCart === 0 ? (
           <Button
             size="sm" 
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm" // Changed from bg-accent to bg-primary
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm py-2" // Adjusted padding
             disabled={!stockAvailable}
             onClick={handleAddToCart}
             aria-label={`Add ${product.title} to cart`}
@@ -72,11 +74,11 @@ export function ProductCard({ product }: ProductCardProps) {
           </Button>
         ) : (
           <div className="flex items-center justify-between w-full">
-            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleDecreaseQuantity} aria-label="Decrease quantity">
+            <Button variant="outline" size="icon" className="h-9 w-9 border-primary/50 text-primary hover:bg-primary/10" onClick={handleDecreaseQuantity} aria-label="Decrease quantity">
               <Minus className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium mx-2 tabular-nums">{quantityInCart}</span>
-            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!stockAvailable}>
+            <Button variant="outline" size="icon" className="h-9 w-9 border-primary/50 text-primary hover:bg-primary/10" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!stockAvailable}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
