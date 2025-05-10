@@ -38,7 +38,7 @@ export default function OrderDetailPage() {
           We couldn't find the order you're looking for, or it doesn't belong to your account.
         </p>
         <Button asChild variant="outline" size="sm">
-          <Link href="/my-orders">Back to My Orders</Link>
+          <Link href="/my-orders" legacyBehavior passHref><a>Back to My Orders</a></Link>
         </Button>
       </div>
     );

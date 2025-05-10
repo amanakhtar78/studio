@@ -62,8 +62,8 @@ export default function TrackOrderPage() {
           <Button onClick={openModal} size="sm" className="w-full max-w-xs bg-primary hover:bg-primary/90 text-primary-foreground text-sm"> {/* Smaller button, text size */}
             Login or Create Account
           </Button>
-          <Button asChild variant="link" size="sm" className="text-primary text-xs"> {/* Smaller button, text size */}
-            <Link href="/">Back to Shopping</Link>
+          <Button asChild variant="link" size="sm" className="text-primary text-xs">
+            <Link href="/" legacyBehavior passHref><a>Back to Shopping</a></Link>
           </Button>
         </CardContent>
       </Card>

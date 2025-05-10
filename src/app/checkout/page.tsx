@@ -129,7 +129,7 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-bold mb-4">Your Cart is Empty</h1> {/* Reduced font size */}
         <p className="text-muted-foreground mb-6 text-sm">Looks like you haven't added anything to your cart yet.</p> {/* Reduced font size */}
         <Button asChild size="sm">
-          <Link href="/">Continue Shopping</Link>
+          <Link href="/" legacyBehavior passHref><a>Continue Shopping</a></Link>
         </Button>
       </div>
     );

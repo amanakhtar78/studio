@@ -27,7 +27,7 @@ export default function MyOrdersPage() {
           You haven't placed any orders. Start shopping to see your orders here!
         </p>
         <Button asChild size="sm">
-          <Link href="/">Continue Shopping</Link>
+          <Link href="/" legacyBehavior passHref><a>Continue Shopping</a></Link>
         </Button>
       </div>
     );
@@ -94,8 +94,8 @@ export default function MyOrdersPage() {
               </div>
             </CardContent>
             <CardFooter className="border-t p-3"> {/* Reduced padding */}
-              <Button asChild size="sm" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground text-xs"> {/* Smaller button, text size */}
-                <Link href={`/my-orders/${order.id}`}>View Details</Link>
+              <Button asChild size="sm" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground text-xs">
+                <Link href={`/my-orders/${order.id}`} legacyBehavior passHref><a>View Details</a></Link>
               </Button>
               {(order.currentStatus === 'Completed' || order.currentStatus === 'Delivered') && (
                 <Button variant="outline" size="sm" className="w-full sm:w-auto sm:ml-auto mt-1.5 sm:mt-0 text-xs" onClick={() => alert('Reorder functionality coming soon!')}> {/* Smaller button, text size */}
@@ -109,3 +109,5 @@ export default function MyOrdersPage() {
     </div>
   );
 }
+
+// Removed metadata export as this is a client component
