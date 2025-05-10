@@ -116,19 +116,19 @@ export default function CheckoutPage() {
 
   if (productStatus === 'loading') {
      return (
-      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-12 text-center flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Loading cart details...</p>
+      <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="mt-3 text-muted-foreground text-sm">Loading cart details...</p>
       </div>
     );
   }
 
   if (cartItemsBase.length === 0) {
     return (
-      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-12 text-center">
-        <h1 className="text-3xl font-bold mb-6">Your Cart is Empty</h1>
-        <p className="text-muted-foreground mb-8">Looks like you haven't added anything to your cart yet.</p>
-        <Button asChild>
+      <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Your Cart is Empty</h1> {/* Reduced font size */}
+        <p className="text-muted-foreground mb-6 text-sm">Looks like you haven't added anything to your cart yet.</p> {/* Reduced font size */}
+        <Button asChild size="sm">
           <Link href="/">Continue Shopping</Link>
         </Button>
       </div>
@@ -137,94 +137,94 @@ export default function CheckoutPage() {
 
 
   return (
-    <div className="container max-w-screen-xl mx-auto px-4 md:px-6 py-8 md:py-12">
-      <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-8">Checkout</h1>
-      <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+    <div className="container max-w-screen-xl mx-auto px-2 md:px-4 py-4 md:py-6"> {/* Reduced padding */}
+      <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-6">Checkout</h1> {/* Reduced font size and margin */}
+      <div className="grid md:grid-cols-3 gap-6 lg:gap-8"> {/* Reduced gap */}
         <div className="md:col-span-2">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-2xl">Order Summary</CardTitle>
+          <Card className="shadow-md"> {/* Reduced shadow */}
+            <CardHeader className="p-4"> {/* Reduced padding */}
+              <CardTitle className="text-xl">Order Summary</CardTitle> {/* Reduced font size */}
             </CardHeader>
-            <CardContent className="divide-y divide-border">
+            <CardContent className="divide-y divide-border p-4 pt-0"> {/* Reduced padding */}
               {cartItemsWithDetails.map((item) => (
-                <div key={item.id} className="flex items-center space-x-4 py-5 first:pt-0 last:pb-0">
-                  <div className="relative w-24 h-24 rounded-md overflow-hidden bg-white p-1">
+                <div key={item.id} className="flex items-center space-x-3 py-3 first:pt-0 last:pb-0"> {/* Reduced padding and spacing */}
+                  <div className="relative w-16 h-16 rounded-md overflow-hidden bg-white p-1"> {/* Reduced image size */}
                     <Image src={item.image} alt={item.title} layout="fill" objectFit="contain" />
                   </div>
                   <div className="flex-grow">
-                    <h3 className="font-semibold">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground">KES {item.price.toLocaleString()}</p>
+                    <h3 className="font-semibold text-sm">{item.title}</h3> {/* Reduced font size */}
+                    <p className="text-xs text-muted-foreground">KES {item.price.toLocaleString()}</p> {/* Reduced font size */}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity - 1)}>
-                      <Minus className="h-4 w-4" />
+                  <div className="flex items-center space-x-1.5"> {/* Reduced spacing */}
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity - 1)}> {/* Smaller button */}
+                      <Minus className="h-3.5 w-3.5" />
                     </Button>
-                    <span className="text-lg font-medium w-8 text-center tabular-nums">{item.cartQuantity}</span>
-                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity + 1)} disabled={!item.stockAvailability}>
-                      <Plus className="h-4 w-4" />
+                    <span className="text-base font-medium w-6 text-center tabular-nums">{item.cartQuantity}</span> {/* Reduced font size and width */}
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity + 1)} disabled={!item.stockAvailability}> {/* Smaller button */}
+                      <Plus className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                  <p className="font-semibold w-28 text-right tabular-nums">KES {(item.price * item.cartQuantity).toLocaleString()}</p>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), 0)}>
-                     <Trash2 className="h-5 w-5" />
+                  <p className="font-semibold w-20 text-right tabular-nums text-sm">KES {(item.price * item.cartQuantity).toLocaleString()}</p> {/* Reduced width and font size */}
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-8 w-8" onClick={() => updateItemQuantity(item.id.toString(), 0)}> {/* Smaller button */}
+                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
             </CardContent>
-            <CardFooter className="flex justify-end items-center pt-6 border-t">
-                <p className="text-xl font-bold">Subtotal: KES {cartSubtotal.toLocaleString()}</p>
+            <CardFooter className="flex justify-end items-center p-4 border-t"> {/* Reduced padding */}
+                <p className="text-lg font-bold">Subtotal: KES {cartSubtotal.toLocaleString()}</p> {/* Reduced font size */}
             </CardFooter>
           </Card>
         </div>
 
         <div className="md:col-span-1">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-2xl">Delivery Details</CardTitle>
-              <CardDescription>
+          <Card className="shadow-md"> {/* Reduced shadow */}
+            <CardHeader className="p-4"> {/* Reduced padding */}
+              <CardTitle className="text-xl">Delivery Details</CardTitle> {/* Reduced font size */}
+              <CardDescription className="text-xs"> {/* Reduced font size */}
                 {isAuthenticated && user?.address ? 'Choose your delivery address or enter a new one.' : 'Please fill in your delivery information.'}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4"> {/* Reduced padding */}
               {isAuthenticated && user?.address && (
                 <RadioGroup
                   value={useProfileAddress ? "profile" : "new"}
                   onValueChange={(value) => {
                     setUseProfileAddress(value === "profile");
                   }}
-                  className="mb-6"
+                  className="mb-4" /* Reduced margin */
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="profile" id="rProfileAddress" />
-                    <Label htmlFor="rProfileAddress" className="cursor-pointer">Use my saved address:</Label>
+                    <Label htmlFor="rProfileAddress" className="cursor-pointer text-sm">Use my saved address:</Label> {/* Reduced font size */}
                   </div>
                   {useProfileAddress && (
-                    <Card className="bg-muted/50 p-3 text-sm ml-7 my-2 border-border/70 shadow-sm">
+                    <Card className="bg-muted/50 p-2.5 text-xs ml-6 my-1.5 border-border/70 shadow-sm"> {/* Reduced padding, font size, margin */}
                       <p><strong>{user.name}</strong></p>
                       <p>{user.phoneNumber || 'No phone on file'}</p>
                       <p>{user.address!.street}, {user.address!.city}</p>
                       <p>{user.address!.pinCode} <span className="capitalize">({user.address!.addressType})</span></p>
                     </Card>
                   )}
-                  <div className="flex items-center space-x-2 mt-2">
+                  <div className="flex items-center space-x-2 mt-1.5"> {/* Reduced margin */}
                     <RadioGroupItem value="new" id="rNewAddress" />
-                    <Label htmlFor="rNewAddress" className="cursor-pointer">Enter a new delivery address</Label>
+                    <Label htmlFor="rNewAddress" className="cursor-pointer text-sm">Enter a new delivery address</Label> {/* Reduced font size */}
                   </div>
                 </RadioGroup>
               )}
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4"> {/* Reduced spacing */}
                   <FormField
                     control={form.control}
                     name="fullName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel className="text-sm">Full Name</FormLabel> {/* Reduced font size */}
                         <FormControl>
-                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={useProfileAddress && !!user?.name} />
+                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={useProfileAddress && !!user?.name} className="h-9 text-sm" /> {/* Reduced height and font size */}
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" /> {/* Reduced font size */}
                       </FormItem>
                     )}
                   />
@@ -233,11 +233,11 @@ export default function CheckoutPage() {
                     name="phoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel className="text-sm">Phone Number</FormLabel> {/* Reduced font size */}
                         <FormControl>
-                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={useProfileAddress && !!user?.phoneNumber} />
+                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={useProfileAddress && !!user?.phoneNumber} className="h-9 text-sm" /> {/* Reduced height and font size */}
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" /> {/* Reduced font size */}
                       </FormItem>
                     )}
                   />
@@ -246,11 +246,11 @@ export default function CheckoutPage() {
                     name="deliveryAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Delivery Address</FormLabel>
+                        <FormLabel className="text-sm">Delivery Address</FormLabel> {/* Reduced font size */}
                         <FormControl>
-                          <Input placeholder="e.g. 123 Bakery St, Apt 4B, Nairobi" {...field} disabled={useProfileAddress && !!user?.address?.street}/>
+                          <Input placeholder="e.g. 123 Bakery St, Apt 4B, Nairobi" {...field} disabled={useProfileAddress && !!user?.address?.street} className="h-9 text-sm" /> {/* Reduced height and font size */}
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" /> {/* Reduced font size */}
                       </FormItem>
                     )}
                   />
@@ -259,16 +259,16 @@ export default function CheckoutPage() {
                     name="pinCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Pin Code / Postal Code</FormLabel>
+                        <FormLabel className="text-sm">Pin Code / Postal Code</FormLabel> {/* Reduced font size */}
                         <FormControl>
-                          <Input placeholder="e.g. 00100" {...field} disabled={useProfileAddress && !!user?.address?.pinCode} />
+                          <Input placeholder="e.g. 00100" {...field} disabled={useProfileAddress && !!user?.address?.pinCode} className="h-9 text-sm" /> {/* Reduced height and font size */}
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-xs" /> {/* Reduced font size */}
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full text-lg py-6 bg-accent hover:bg-accent/90 text-accent-foreground" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                  <Button type="submit" size="default" className="w-full text-sm py-2.5 bg-accent hover:bg-accent/90 text-accent-foreground" disabled={form.formState.isSubmitting}> {/* Reduced size and padding */}
+                    {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Place Order (KES {cartSubtotal.toLocaleString()})
                   </Button>
                 </form>

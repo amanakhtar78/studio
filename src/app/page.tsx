@@ -125,7 +125,7 @@ export default function HomePage() {
   if (!isMounted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -138,18 +138,18 @@ export default function HomePage() {
   if (isLoadingData && !isMounted) { // Show loading if not mounted and still loading
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Loading goodies...</p>
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="mt-3 text-muted-foreground">Loading goodies...</p>
       </div>
     );
   }
 
   if (hasFailed) {
     return (
-      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-12 text-center">
-        <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-6" />
-        <h1 className="text-3xl font-bold mb-4">Oops! Something went wrong.</h1>
-        <p className="text-muted-foreground mb-8">
+      <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-3">Oops! Something went wrong.</h1>
+        <p className="text-muted-foreground mb-6 text-sm">
           We couldn't load our products or categories at the moment. Please try again later.
         </p>
         <p className="text-xs text-muted-foreground">
@@ -162,34 +162,34 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col">
-      <div className="container max-w-screen-2xl px-4 md:px-6 py-8 md:py-12">
+      <div className="container max-w-screen-2xl px-2 md:px-4 py-4 md:py-6">
         <Banner images={bannerImages} />
       </div>
 
       {/* Search and Filter Section */}
-      <div className="container max-w-screen-2xl mx-auto px-4 md:px-6 py-6 md:py-8 sticky top-16 bg-background/95 backdrop-blur-sm z-40 shadow-sm -mx-4 md:-mx-6 site-padding-override">
+      <div className="container max-w-screen-2xl mx-auto px-2 md:px-4 py-3 md:py-4 sticky top-16 bg-background/95 backdrop-blur-sm z-40 shadow-sm -mx-2 md:-mx-4 site-padding-override-sm">
          <style jsx global>{`
-            .site-padding-override {
-              padding-left: 1rem !important; /* Corresponds to px-4 */
-              padding-right: 1rem !important; /* Corresponds to px-4 */
+            .site-padding-override-sm {
+              padding-left: 0.5rem !important; /* Corresponds to px-2 */
+              padding-right: 0.5rem !important; /* Corresponds to px-2 */
             }
             @media (min-width: 768px) { /* md breakpoint */
-              .site-padding-override {
-                padding-left: 1.5rem !important; /* Corresponds to md:px-6 */
-                padding-right: 1.5rem !important; /* Corresponds to md:px-6 */
+              .site-padding-override-sm {
+                padding-left: 1rem !important; /* Corresponds to md:px-4 */
+                padding-right: 1rem !important; /* Corresponds to md:px-4 */
               }
             }
           `}</style>
-        <div className="flex flex-col md:flex-row gap-4 md:items-end">
+        <div className="flex flex-col md:flex-row gap-3 md:items-end">
           {/* Search Input */}
-          <div className="relative flex-grow w-full md:max-w-xs lg:max-w-sm xl:max-w-md">
+          <div className="relative flex-grow w-full md:max-w-xs lg:max-w-sm">
             <Label htmlFor="search-input" className="sr-only">Search products</Label>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="search-input"
               type="search"
-              placeholder="Search for delicious treats..."
-              className="pl-10 pr-4 py-2 text-base w-full h-12 rounded-md border-2 border-input focus:border-primary focus-visible:ring-primary/20"
+              placeholder="Search treats..."
+              className="pl-8 pr-3 py-2 text-sm w-full h-10 rounded-md border-2 border-input focus:border-primary focus-visible:ring-primary/20"
               value={searchQuery}
               onChange={handleSearchChange}
               aria-label="Search products"
@@ -197,29 +197,29 @@ export default function HomePage() {
           </div>
 
           {/* Filters Group */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto md:flex-grow md:justify-start md:items-end">
-            <div className="flex-grow sm:flex-grow-0 sm:w-48">
-              <Label htmlFor="sort-select" className="text-sm font-medium text-muted-foreground">Sort by</Label>
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto md:flex-grow md:justify-start md:items-end">
+            <div className="flex-grow sm:flex-grow-0 sm:w-40">
+              <Label htmlFor="sort-select" className="text-xs font-medium text-muted-foreground">Sort by</Label>
               <Select value={sortOption} onValueChange={setSortOption}>
-                <SelectTrigger id="sort-select" className="h-12 text-base mt-1">
+                <SelectTrigger id="sort-select" className="h-10 text-sm mt-0.5">
                   <SelectValue placeholder="Sort by..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="relevance">Relevance</SelectItem>
                   <SelectItem value="name-asc">Name: A-Z</SelectItem>
                   <SelectItem value="name-desc">Name: Z-A</SelectItem>
-                  <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                  <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                  <SelectItem value="rating-desc">Rating: High to Low</SelectItem>
+                  <SelectItem value="price-asc">Price: Low-High</SelectItem>
+                  <SelectItem value="price-desc">Price: High-Low</SelectItem>
+                  <SelectItem value="rating-desc">Rating: High-Low</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {categoryStatus === 'succeeded' && allCategories.length > 0 && (
-              <div className="flex-grow sm:flex-grow-0 sm:w-48">
-                <Label htmlFor="category-filter-select" className="text-sm font-medium text-muted-foreground">Category</Label>
+              <div className="flex-grow sm:flex-grow-0 sm:w-40">
+                <Label htmlFor="category-filter-select" className="text-xs font-medium text-muted-foreground">Category</Label>
                 <Select value={selectedGlobalCategory} onValueChange={setSelectedGlobalCategory}>
-                  <SelectTrigger id="category-filter-select" className="h-12 text-base mt-1">
+                  <SelectTrigger id="category-filter-select" className="h-10 text-sm mt-0.5">
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
@@ -231,13 +231,13 @@ export default function HomePage() {
                 </Select>
               </div>
             )}
-             <div className="flex-grow sm:flex-grow-0 sm:w-32">
-              <Label htmlFor="min-price" className="text-sm font-medium text-muted-foreground">Min Price</Label>
-              <Input id="min-price" type="number" placeholder="KES" value={minPrice} onChange={handleMinPriceChange} className="h-12 text-base mt-1" min="0" />
+             <div className="flex-grow sm:flex-grow-0 sm:w-28">
+              <Label htmlFor="min-price" className="text-xs font-medium text-muted-foreground">Min Price</Label>
+              <Input id="min-price" type="number" placeholder="KES" value={minPrice} onChange={handleMinPriceChange} className="h-10 text-sm mt-0.5" min="0" />
             </div>
-            <div className="flex-grow sm:flex-grow-0 sm:w-32">
-              <Label htmlFor="max-price" className="text-sm font-medium text-muted-foreground">Max Price</Label>
-              <Input id="max-price" type="number" placeholder="KES" value={maxPrice} onChange={handleMaxPriceChange} className="h-12 text-base mt-1" min="0"/>
+            <div className="flex-grow sm:flex-grow-0 sm:w-28">
+              <Label htmlFor="max-price" className="text-xs font-medium text-muted-foreground">Max Price</Label>
+              <Input id="max-price" type="number" placeholder="KES" value={maxPrice} onChange={handleMaxPriceChange} className="h-10 text-sm mt-0.5" min="0"/>
             </div>
           </div>
         </div>
@@ -250,16 +250,16 @@ export default function HomePage() {
       <div className="mt-0"> {/* Removed top margin as sticky filter bar handles spacing */}
         {isLoadingData && isMounted && ( // Show loading if mounted and still loading subsequent data
             <div className="flex flex-col items-center justify-center min-h-[30vh]">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Applying filters...</p>
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="mt-3 text-muted-foreground text-sm">Applying filters...</p>
             </div>
         )}
 
         {!isLoadingData && displayableSections.length === 0 && hasActiveFilters && (
-          <div className="container max-w-screen-2xl px-4 md:px-6 py-12 text-center">
-            <Search className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-            <h2 className="text-2xl font-semibold text-foreground mb-4">No products match your criteria</h2>
-            <p className="text-muted-foreground">Try adjusting your search or filters.</p>
+          <div className="container max-w-screen-2xl px-2 md:px-4 py-8 text-center">
+            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-3">No products match your criteria</h2>
+            <p className="text-muted-foreground text-sm">Try adjusting your search or filters.</p>
           </div>
         )}
 
@@ -268,33 +268,33 @@ export default function HomePage() {
             <ProductList
               category={category}
               products={productsForSection}
-              className={index === 0 ? "pt-0 md:pt-0 pb-8 md:pb-12" : "py-8 md:py-12"} // Adjusted pt for first item
+              className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"} // Adjusted pt for first item
             />
             {index < displayableSections.length - 1 && (
-              <div className="container max-w-screen-2xl px-4 md:px-6">
-                <Separator className="my-10 md:my-16" />
+              <div className="container max-w-screen-2xl px-2 md:px-4">
+                <Separator className="my-6 md:my-8" />
               </div>
             )}
           </div>
         ))}
         
         {!isLoadingData && allProducts.length === 0 && productStatus === 'succeeded' && !hasActiveFilters && (
-           <div className="container max-w-screen-2xl px-4 md:px-6 py-12 text-center">
-            <AlertTriangle className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-            <h2 className="text-2xl font-semibold text-foreground mb-4">No products available</h2>
-            <p className="text-muted-foreground">Please check back later.</p>
+           <div className="container max-w-screen-2xl px-2 md:px-4 py-8 text-center">
+            <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-3">No products available</h2>
+            <p className="text-muted-foreground text-sm">Please check back later.</p>
           </div>
         )}
       </div>
 
 
-      <div className="container max-w-screen-2xl px-4 md:px-6 py-10 md:py-16">
-        <Separator className="mb-10 md:mb-16" />
+      <div className="container max-w-screen-2xl px-2 md:px-4 py-6 md:py-8">
+        <Separator className="mb-6 md:mb-8" />
         <AboutTimeline />
       </div>
 
       <div className="bg-muted/30">
-        <div className="container max-w-screen-2xl px-4 md:px-6 py-10 md:py-16">
+        <div className="container max-w-screen-2xl px-2 md:px-4 py-6 md:py-8">
           <WhyChooseUs />
         </div>
       </div>
@@ -302,3 +302,4 @@ export default function HomePage() {
     </div>
   );
 }
+

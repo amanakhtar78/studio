@@ -30,15 +30,15 @@ interface HighlightCardProps {
 function HighlightCard({ item }: HighlightCardProps) {
   const IconComponent = item.icon;
   return (
-    <Card className="text-center shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
-      <CardHeader className="pb-4">
-        <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-          <IconComponent className="w-8 h-8 text-primary" />
+    <Card className="text-center shadow-md hover:shadow-lg transition-shadow duration-300 h-full flex flex-col"> {/* Reduced shadow */}
+      <CardHeader className="pb-3 p-4"> {/* Reduced padding */}
+        <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3"> {/* Reduced size and margin */}
+          <IconComponent className="w-6 h-6 text-primary" /> {/* Reduced icon size */}
         </div>
-        <CardTitle className="text-xl font-semibold text-foreground">{item.title}</CardTitle>
+        <CardTitle className="text-lg font-semibold text-foreground">{item.title}</CardTitle> {/* Reduced font size */}
       </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-muted-foreground text-sm">{item.description}</p>
+      <CardContent className="flex-grow p-4 pt-0"> {/* Reduced padding */}
+        <p className="text-muted-foreground text-xs">{item.description}</p> {/* Reduced font size */}
       </CardContent>
     </Card>
   );
@@ -46,11 +46,11 @@ function HighlightCard({ item }: HighlightCardProps) {
 
 export function WhyChooseUs() {
   return (
-    <section className="py-8 md:py-12">
-      <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-10 md:mb-12 text-center">
+    <section className="py-4 md:py-6"> {/* Reduced padding */}
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-6 md:mb-8 text-center"> {/* Reduced font size and margin */}
         Why Choose Zahra Sweet Rolls?
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5"> {/* Reduced gap */}
         {highlightItems.map((item) => (
           <HighlightCard key={item.title} item={item} />
         ))}

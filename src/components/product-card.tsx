@@ -36,47 +36,48 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Card className="flex flex-col overflow-hidden h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
+    <Card className="flex flex-col overflow-hidden h-full shadow-md hover:shadow-lg transition-shadow duration-300 rounded-md">
       <CardHeader className="p-0">
-        <div className="relative w-full h-48">
+        <div className="relative w-full h-40"> {/* Reduced height */}
           <Image
             src={product.image} // API field: image
             alt={product.title} // API field: title
             layout="fill"
             objectFit="contain" // Changed to contain to show full image, or "cover" if cropping is fine
-            className="rounded-t-lg p-2 bg-white" // Added padding and white background for better presentation
+            className="rounded-t-md p-1.5 bg-white" // Added padding and white background for better presentation
           />
         </div>
       </CardHeader>
-      <CardContent className="p-5 flex-grow">
-        <CardTitle className="text-lg font-semibold mb-2 truncate" title={product.title}>{product.title}</CardTitle>
-        <Badge variant="secondary" className="mb-2 text-xs">{product.category}</Badge>
-        <CardDescription className="text-sm text-muted-foreground mb-2 h-10 overflow-hidden text-ellipsis">
+      <CardContent className="p-3 flex-grow"> {/* Reduced padding */}
+        <CardTitle className="text-base font-semibold mb-1 truncate" title={product.title}>{product.title}</CardTitle> {/* Reduced font size */}
+        <Badge variant="secondary" className="mb-1.5 text-xs">{product.category}</Badge>
+        <CardDescription className="text-xs text-muted-foreground mb-1.5 h-8 overflow-hidden text-ellipsis"> {/* Reduced font size and height */}
           {product.description}
         </CardDescription>
-        <p className="text-lg font-bold text-primary mb-2">KES {product.price.toLocaleString()}</p>
+        <p className="text-base font-bold text-primary mb-1.5">KES {product.price.toLocaleString()}</p> {/* Reduced font size */}
         <Badge variant={stockAvailable ? 'default' : 'destructive'} className={`${stockAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white text-xs`}>
           {stockAvailable ? 'In Stock' : 'Out of Stock'}
         </Badge>
       </CardContent>
-      <CardFooter className="p-5 pt-0">
+      <CardFooter className="p-3 pt-0"> {/* Reduced padding */}
         {quantityInCart === 0 ? (
           <Button
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            size="sm" /* Smaller button */
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-xs" /* Reduced text size */
             disabled={!stockAvailable}
             onClick={handleAddToCart}
             aria-label={`Add ${product.title} to cart`}
           >
-            <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
+            <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Add to Cart
           </Button>
         ) : (
           <div className="flex items-center justify-between w-full">
-            <Button variant="outline" size="icon" onClick={handleDecreaseQuantity} aria-label="Decrease quantity">
-              <Minus className="h-4 w-4" />
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDecreaseQuantity} aria-label="Decrease quantity"> {/* Smaller icon button */}
+              <Minus className="h-3.5 w-3.5" />
             </Button>
-            <span className="text-lg font-medium mx-4 tabular-nums">{quantityInCart}</span>
-            <Button variant="outline" size="icon" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!stockAvailable}>
-              <Plus className="h-4 w-4" />
+            <span className="text-base font-medium mx-3 tabular-nums">{quantityInCart}</span> {/* Reduced font size & margin */}
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!stockAvailable}> {/* Smaller icon button */}
+              <Plus className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
@@ -84,3 +85,4 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
+

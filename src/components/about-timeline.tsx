@@ -48,20 +48,20 @@ function TimelineItem({ event, isLast }: TimelineItemProps) {
   const IconComponent = event.icon;
   return (
     <div className="flex items-start">
-      <div className="flex flex-col items-center mr-6">
-        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
-          <IconComponent className="w-6 h-6" />
+      <div className="flex flex-col items-center mr-4"> {/* Reduced margin */}
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md"> {/* Reduced size */}
+          <IconComponent className="w-5 h-5" /> {/* Reduced icon size */}
         </div>
-        {!isLast && <div className="w-px h-24 bg-border mt-2"></div>}
+        {!isLast && <div className="w-px h-20 bg-border mt-1.5"></div>} {/* Reduced height and margin */}
       </div>
-      <Card className="flex-grow shadow-lg hover:shadow-xl transition-shadow duration-300">
-        <CardContent className="p-5 md:p-6">
-          <div className="flex items-center mb-2">
-            <CalendarDays className="w-5 h-5 mr-2 text-muted-foreground" />
-            <p className="text-sm font-semibold text-primary">{event.year}</p>
+      <Card className="flex-grow shadow-md hover:shadow-lg transition-shadow duration-300"> {/* Reduced shadow */}
+        <CardContent className="p-4"> {/* Reduced padding */}
+          <div className="flex items-center mb-1.5">
+            <CalendarDays className="w-4 h-4 mr-1.5 text-muted-foreground" /> {/* Reduced icon size and margin */}
+            <p className="text-xs font-semibold text-primary">{event.year}</p> {/* Reduced font size */}
           </div>
-          <h3 className="text-xl font-semibold text-foreground mb-1">{event.title}</h3>
-          <p className="text-muted-foreground text-sm">{event.description}</p>
+          <h3 className="text-lg font-semibold text-foreground mb-1">{event.title}</h3> {/* Reduced font size */}
+          <p className="text-muted-foreground text-xs">{event.description}</p> {/* Reduced font size */}
         </CardContent>
       </Card>
     </div>
@@ -70,11 +70,11 @@ function TimelineItem({ event, isLast }: TimelineItemProps) {
 
 export function AboutTimeline() {
   return (
-    <section className="py-8 md:py-12">
-      <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-10 md:mb-12 text-center">
+    <section className="py-4 md:py-6"> {/* Reduced padding */}
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-6 md:mb-8 text-center"> {/* Reduced font size and margin */}
         Our Journey
       </h2>
-      <div className="relative max-w-3xl mx-auto space-y-8">
+      <div className="relative max-w-2xl mx-auto space-y-6"> {/* Reduced max-width and spacing */}
         {timelineEvents.map((event, index) => (
           <TimelineItem
             key={event.year}

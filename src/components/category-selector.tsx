@@ -12,9 +12,8 @@ interface CategorySelectorProps {
 
 export function CategorySelector({ categories }: CategorySelectorProps) {
   const [isMounted, setIsMounted] = useState(false);
-  // Approximate height of Navbar (4rem = 64px) + FilterBar (variable, ~6rem or more = ~96px). Total ~10rem = 160px
-  // Let's try a fixed value or calculate dynamically if needed. For now, fixed.
-  const stickyOffset = 'top-[10rem] md:top-[10rem]'; // Adjust this value as needed based on actual combined height
+  // Navbar (4rem/64px) + FilterBar (approx. (py-3/12px * 2) + h-10/40px input = ~64px). Total ~128px
+  const stickyOffset = 'top-[8rem] md:top-[8rem]'; // Approx 128px
 
   useEffect(() => {
     setIsMounted(true);
@@ -23,8 +22,8 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
   const handleScrollToCategory = (slug: string) => {
     const element = document.getElementById(slug);
     if (element) {
-      // Navbar height + Filter bar height + some padding
-      const headerOffset = 160 + 20; // Approx 160px for navbar + filter bar, 20px for padding
+      // Navbar height (64px) + Filter bar height (~64px) + some padding (16px)
+      const headerOffset = 64 + 64 + 16; // Approx 144px
       const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
       const offsetPosition = elementPosition - headerOffset;
 
@@ -38,11 +37,11 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
 
   if (!isMounted || !categories || categories.length === 0) {
     return (
-      <div className={`py-4 md:py-6 sticky ${stickyOffset} bg-background/90 backdrop-blur-sm z-30 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6`}>
+      <div className={`py-2 md:py-3 sticky ${stickyOffset} bg-background/90 backdrop-blur-sm z-30 shadow-sm -mx-2 px-2 md:-mx-4 md:px-4`}> {/* Reduced padding */}
         <div className="container max-w-screen-2xl px-0">
-          <div className="flex space-x-3 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex space-x-2 overflow-x-auto pb-1.5 no-scrollbar"> {/* Reduced spacing */}
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-9 w-24 rounded-md" />
+              <Skeleton key={i} className="h-8 w-20 rounded-md" /> 
             ))}
           </div>
         </div>
@@ -52,15 +51,15 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
   
 
   return (
-    <div className={`py-4 md:py-6 sticky ${stickyOffset} bg-background/90 backdrop-blur-sm z-30 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6`}>
+    <div className={`py-2 md:py-3 sticky ${stickyOffset} bg-background/90 backdrop-blur-sm z-30 shadow-sm -mx-2 px-2 md:-mx-4 md:px-4`}> {/* Reduced padding */}
       <div className="container max-w-screen-2xl px-0">
-        <div className="flex space-x-3 overflow-x-auto pb-2 no-scrollbar">
+        <div className="flex space-x-2 overflow-x-auto pb-1.5 no-scrollbar"> {/* Reduced spacing */}
           {categories.map((category) => (
             <Button
               key={category.id}
               variant="outline"
-              size="sm"
-              className="whitespace-nowrap border-primary/50 text-primary hover:bg-primary/10 focus:bg-primary/10 focus:ring-2 focus:ring-primary/50 active:bg-primary/20"
+              size="sm" // Already sm, which is h-9
+              className="whitespace-nowrap border-primary/50 text-primary hover:bg-primary/10 focus:bg-primary/10 focus:ring-2 focus:ring-primary/50 active:bg-primary/20 px-2.5 text-xs" // Adjusted padding and text size
               onClick={() => handleScrollToCategory(category.slug)}
             >
               {category.name}
@@ -71,5 +70,3 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
     </div>
   );
 }
-
-```

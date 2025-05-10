@@ -37,9 +37,9 @@ export default function TrackOrderPage() {
   
   if (!isMounted || authIsLoading) {
     return (
-      <div className="container max-w-screen-md mx-auto px-4 md:px-6 py-12 flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-lg text-muted-foreground">Loading authentication status...</p>
+      <div className="container max-w-screen-sm mx-auto px-2 md:px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]"> {/* Reduced padding and max-width */}
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" /> {/* Reduced icon size and margin */}
+        <p className="text-base text-muted-foreground">Loading authentication status...</p> {/* Reduced font size */}
       </div>
     );
   }
@@ -47,22 +47,22 @@ export default function TrackOrderPage() {
 
   // This content will briefly show if not authenticated and not yet redirected, or if modal is closed without login.
   return (
-    <div className="container max-w-screen-md mx-auto px-4 md:px-6 py-12">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl md:text-3xl text-center">Track Your Order</CardTitle>
-          <CardDescription className="text-center text-muted-foreground pt-2">
+    <div className="container max-w-screen-sm mx-auto px-2 md:px-4 py-8"> {/* Reduced padding and max-width */}
+      <Card className="shadow-md"> {/* Reduced shadow */}
+        <CardHeader className="p-4"> {/* Reduced padding */}
+          <CardTitle className="text-xl md:text-2xl text-center">Track Your Order</CardTitle> {/* Reduced font size */}
+          <CardDescription className="text-center text-muted-foreground pt-1.5 text-xs"> {/* Reduced padding and font size */}
             Please log in to view your order history and track active orders.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-6 pt-6">
-          <p className="text-center">
+        <CardContent className="flex flex-col items-center space-y-4 p-4 pt-2"> {/* Reduced spacing, padding */}
+          <p className="text-center text-sm"> {/* Reduced font size */}
             If you don't have an account, creating one is quick and easy!
           </p>
-          <Button onClick={openModal} className="w-full max-w-xs bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button onClick={openModal} size="sm" className="w-full max-w-xs bg-primary hover:bg-primary/90 text-primary-foreground text-sm"> {/* Smaller button, text size */}
             Login or Create Account
           </Button>
-          <Button asChild variant="link" className="text-primary">
+          <Button asChild variant="link" size="sm" className="text-primary text-xs"> {/* Smaller button, text size */}
             <Link href="/">Back to Shopping</Link>
           </Button>
         </CardContent>
@@ -70,9 +70,3 @@ export default function TrackOrderPage() {
     </div>
   );
 }
-
-// Metadata removed as it cannot be exported from a client component.
-// export const metadata = {
-//   title: 'Track Your Order - Zahra Sweet Rolls',
-//   description: 'Log in to check the status of your order from Zahra Sweet Rolls.',
-// };

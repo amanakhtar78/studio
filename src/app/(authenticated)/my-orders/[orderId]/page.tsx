@@ -31,13 +31,13 @@ export default function OrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-12 text-center">
-        <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-6" />
-        <h1 className="text-3xl font-bold mb-4">Order Not Found</h1>
-        <p className="text-muted-foreground mb-8">
+      <div className="container max-w-screen-md mx-auto px-2 md:px-4 py-8 text-center"> {/* Reduced padding */}
+        <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" /> {/* Reduced icon size and margin */}
+        <h1 className="text-2xl font-bold mb-3">Order Not Found</h1> {/* Reduced font size and margin */}
+        <p className="text-muted-foreground mb-6 text-sm"> {/* Reduced font size and margin */}
           We couldn't find the order you're looking for, or it doesn't belong to your account.
         </p>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" size="sm">
           <Link href="/my-orders">Back to My Orders</Link>
         </Button>
       </div>
@@ -45,65 +45,68 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="container max-w-screen-lg mx-auto px-4 md:px-6 py-8 md:py-12">
-      <Button variant="outline" onClick={() => router.back()} className="mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to My Orders
+    <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-4 md:py-6"> {/* Reduced padding */}
+      <Button variant="outline" size="sm" onClick={() => router.back()} className="mb-4 text-xs"> {/* Smaller button, reduced margin, text size */}
+        <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back to My Orders
       </Button>
 
-      <Card className="shadow-xl">
-        <CardHeader className="bg-muted/30 rounded-t-lg p-6">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-            <CardTitle className="text-2xl md:text-3xl text-primary">Order #{order.id}</CardTitle>
-            <Badge variant={order.currentStatus === 'Delivered' || order.currentStatus === 'Completed' ? 'secondary' : 'default'} className="text-sm px-3 py-1">
+      <Card className="shadow-lg">
+        <CardHeader className="bg-muted/30 rounded-t-lg p-4"> {/* Reduced padding */}
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1.5">
+            <CardTitle className="text-xl md:text-2xl text-primary">Order #{order.id}</CardTitle> {/* Reduced font size */}
+            <Badge 
+              variant={order.currentStatus === 'Delivered' || order.currentStatus === 'Completed' ? 'secondary' : 'default'} 
+              className="text-xs px-2 py-0.5 h-5" /* Smaller badge */
+            >
               {order.currentStatus}
             </Badge>
           </div>
-          <CardDescription className="text-sm text-muted-foreground pt-2">
+          <CardDescription className="text-xs text-muted-foreground pt-1"> {/* Reduced font size and padding */}
             Placed on: {format(new Date(order.orderDate), 'EEEE, MMMM d, yyyy \'at\' h:mm a')}
           </CardDescription>
            {order.estimatedTime && (order.currentStatus !== "Completed" && order.currentStatus !== "Delivered") && (
-              <p className="text-sm text-accent font-semibold pt-1">{order.estimatedTime}</p>
+              <p className="text-xs text-accent font-semibold pt-0.5">{order.estimatedTime}</p> /* Reduced font size and padding */
             )}
         </CardHeader>
 
-        <CardContent className="p-6">
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold mb-4 text-foreground">Order Status</h3>
+        <CardContent className="p-4"> {/* Reduced padding */}
+          <div className="mb-6"> {/* Reduced margin */}
+            <h3 className="text-lg font-semibold mb-3 text-foreground">Order Status</h3> {/* Reduced font size and margin */}
             <OrderProgressBar currentStatus={order.currentStatus} orderType={order.orderType} />
           </div>
 
-          <Separator className="my-8" />
+          <Separator className="my-6" /> {/* Reduced margin */}
 
           <div>
-            <h3 className="text-xl font-semibold mb-4 text-foreground">Items Ordered</h3>
-            <div className="space-y-4">
+            <h3 className="text-lg font-semibold mb-3 text-foreground">Items Ordered</h3> {/* Reduced font size and margin */}
+            <div className="space-y-3"> {/* Reduced spacing */}
               {order.items.map((item: OrderItemDetail) => (
-                <div key={item.productId} className="flex items-start space-x-4 p-3 border rounded-lg bg-card hover:bg-muted/20 transition-colors">
-                  <div className="relative w-20 h-20 rounded-md overflow-hidden border bg-white p-1">
+                <div key={item.productId} className="flex items-start space-x-3 p-2.5 border rounded-lg bg-card hover:bg-muted/20 transition-colors"> {/* Reduced padding and spacing */}
+                  <div className="relative w-16 h-16 rounded-md overflow-hidden border bg-white p-1"> {/* Reduced image size */}
                     <Image 
-                        src={item.imageUrl || `https://picsum.photos/seed/${item.productId}/100/100`} 
+                        src={item.imageUrl || `https://picsum.photos/seed/${item.productId}/64/64`} 
                         alt={item.name} 
                         layout="fill" 
-                        objectFit="contain" // Changed to contain
+                        objectFit="contain" 
                     />
                   </div>
                   <div className="flex-grow">
-                    <h4 className="font-semibold text-lg text-foreground">{item.name}</h4>
-                    <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                    <p className="text-sm text-muted-foreground">Price per item: KES {item.price.toLocaleString()}</p>
+                    <h4 className="font-semibold text-base text-foreground">{item.name}</h4> {/* Reduced font size */}
+                    <p className="text-xs text-muted-foreground">Quantity: {item.quantity}</p>
+                    <p className="text-xs text-muted-foreground">Price per item: KES {item.price.toLocaleString()}</p>
                   </div>
-                  <p className="text-md font-semibold text-primary">KES {(item.price * item.quantity).toLocaleString()}</p>
+                  <p className="text-sm font-semibold text-primary">KES {(item.price * item.quantity).toLocaleString()}</p> {/* Reduced font size */}
                 </div>
               ))}
             </div>
           </div>
 
-          <Separator className="my-8" />
+          <Separator className="my-6" /> {/* Reduced margin */}
           
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4"> {/* Reduced gap */}
             <div>
-                <h3 className="text-xl font-semibold mb-4 text-foreground">Order Summary</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-semibold mb-3 text-foreground">Order Summary</h3> {/* Reduced font size and margin */}
+                <div className="space-y-1.5 text-xs"> {/* Reduced spacing and font size */}
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal:</span>
                         <span>KES {order.totalAmount.toLocaleString()}</span> 
@@ -113,7 +116,7 @@ export default function OrderDetailPage() {
                         <span>{order.orderType === 'delivery' ? 'KES 150' : 'N/A (Dine-In)'}</span>
                     </div>
                     <Separator className="my-1" />
-                    <div className="flex justify-between font-bold text-lg text-foreground">
+                    <div className="flex justify-between font-bold text-base text-foreground"> {/* Reduced font size */}
                         <span>Total Paid:</span>
                         <span>KES {(order.totalAmount + (order.orderType === 'delivery' ? 150 : 0)).toLocaleString()}</span>
                     </div>
@@ -122,28 +125,28 @@ export default function OrderDetailPage() {
 
             {order.orderType === 'delivery' && order.deliveryDetails && (
               <div>
-                <h3 className="text-xl font-semibold mb-4 text-foreground">Delivery Details</h3>
-                <div className="space-y-2 text-sm">
-                  <p className="flex items-center"><Tag className="w-4 h-4 mr-2 text-muted-foreground" /> <span className="font-medium">{order.deliveryDetails.fullName}</span></p>
-                  <p className="flex items-center"><Phone className="w-4 h-4 mr-2 text-muted-foreground" /> {order.deliveryDetails.phoneNumber}</p>
-                  <p className="flex items-start"><MapPin className="w-4 h-4 mr-2 mt-0.5 text-muted-foreground flex-shrink-0" /> {order.deliveryDetails.deliveryAddress}, {order.deliveryDetails.pinCode}</p>
+                <h3 className="text-lg font-semibold mb-3 text-foreground">Delivery Details</h3> {/* Reduced font size and margin */}
+                <div className="space-y-1.5 text-xs"> {/* Reduced spacing and font size */}
+                  <p className="flex items-center"><Tag className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /> <span className="font-medium">{order.deliveryDetails.fullName}</span></p>
+                  <p className="flex items-center"><Phone className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /> {order.deliveryDetails.phoneNumber}</p>
+                  <p className="flex items-start"><MapPin className="w-3.5 h-3.5 mr-1.5 mt-0.5 text-muted-foreground flex-shrink-0" /> {order.deliveryDetails.deliveryAddress}, {order.deliveryDetails.pinCode}</p>
                 </div>
               </div>
             )}
              {order.orderType === 'dine-in' && (
               <div>
-                <h3 className="text-xl font-semibold mb-4 text-foreground">Dine-In Details</h3>
-                 <p className="text-sm text-muted-foreground">This order is for dine-in at our cafe.</p>
-                  {order.currentStatus === "Table Ready" && <p className="text-sm text-green-600 font-medium mt-2">Your table is ready!</p>}
+                <h3 className="text-lg font-semibold mb-3 text-foreground">Dine-In Details</h3> {/* Reduced font size and margin */}
+                 <p className="text-xs text-muted-foreground">This order is for dine-in at our cafe.</p> {/* Reduced font size */}
+                  {order.currentStatus === "Table Ready" && <p className="text-xs text-green-600 font-medium mt-1.5">Your table is ready!</p>} {/* Reduced font size */}
               </div>
             )}
           </div>
         </CardContent>
 
-        <CardFooter className="border-t p-6 flex justify-end">
+        <CardFooter className="border-t p-3 flex justify-end"> {/* Reduced padding */}
           {(order.currentStatus === 'Completed' || order.currentStatus === 'Delivered') && (
-            <Button variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => alert('Reorder functionality coming soon!')}>
-             <ShoppingBag className="mr-2 h-4 w-4" /> Reorder Items
+            <Button variant="default" size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground text-xs" onClick={() => alert('Reorder functionality coming soon!')}> {/* Smaller button, text size */}
+             <ShoppingBag className="mr-1.5 h-3.5 w-3.5" /> Reorder Items
             </Button>
           )}
         </CardFooter>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -44,20 +45,20 @@ export function Banner({ images, autoScrollInterval = 5000 }: BannerProps) {
 
   if (!isMounted || images.length === 0) {
     return (
-      <div className="relative w-full h-64 md:h-96 bg-muted/50 animate-pulse flex items-center justify-center">
-        <p className="text-muted-foreground">Loading banner...</p>
+      <div className="relative w-full h-48 md:h-72 bg-muted/50 animate-pulse flex items-center justify-center rounded-md"> {/* Reduced height */}
+        <p className="text-muted-foreground text-sm">Loading banner...</p>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full overflow-hidden shadow-lg rounded-lg">
+    <div className="relative w-full overflow-hidden shadow-md rounded-md"> {/* Reduced shadow and radius to md */}
       <div
         className="flex transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {images.map((image) => (
-          <div key={image.id} className="relative w-full flex-shrink-0 h-64 md:h-80 lg:h-96">
+          <div key={image.id} className="relative w-full flex-shrink-0 h-48 md:h-64 lg:h-72"> {/* Reduced height */}
             <Image
               src={image.src}
               alt={image.alt}
@@ -65,10 +66,10 @@ export function Banner({ images, autoScrollInterval = 5000 }: BannerProps) {
               objectFit="cover"
               priority={image.id === images[0].id}
               data-ai-hint={image.dataAiHint}
-              className="rounded-lg"
+              className="rounded-md"
             />
-             <div className="absolute inset-0 bg-black/30 flex items-center justify-center p-4">
-              <h2 className="text-2xl md:text-4xl font-bold text-white text-center shadow-md">{image.alt}</h2>
+             <div className="absolute inset-0 bg-black/30 flex items-center justify-center p-3">
+              <h2 className="text-xl md:text-2xl font-bold text-white text-center shadow-sm">{image.alt}</h2> {/* Reduced font size and shadow */}
             </div>
           </div>
         ))}
@@ -77,29 +78,29 @@ export function Banner({ images, autoScrollInterval = 5000 }: BannerProps) {
       <Button
         variant="outline"
         size="icon"
-        className="absolute top-1/2 left-2 md:left-4 transform -translate-y-1/2 rounded-full bg-background/70 hover:bg-background text-foreground"
+        className="absolute top-1/2 left-1.5 md:left-3 transform -translate-y-1/2 rounded-full bg-background/60 hover:bg-background h-8 w-8" // Smaller button, adjusted position
         onClick={goToPrevious}
         aria-label="Previous image"
       >
-        <ChevronLeft className="h-6 w-6" />
+        <ChevronLeft className="h-4 w-4" />
       </Button>
       <Button
         variant="outline"
         size="icon"
-        className="absolute top-1/2 right-2 md:right-4 transform -translate-y-1/2 rounded-full bg-background/70 hover:bg-background text-foreground"
+        className="absolute top-1/2 right-1.5 md:right-3 transform -translate-y-1/2 rounded-full bg-background/60 hover:bg-background h-8 w-8" // Smaller button, adjusted position
         onClick={goToNext}
         aria-label="Next image"
       >
-        <ChevronRight className="h-6 w-6" />
+        <ChevronRight className="h-4 w-4" />
       </Button>
 
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+      <div className="absolute bottom-2.5 left-1/2 transform -translate-x-1/2 flex space-x-1.5"> {/* Adjusted position and spacing */}
         {images.map((_, index) => (
           <button
             key={index}
             className={cn(
-              'w-2 h-2 rounded-full transition-all duration-300',
-              currentIndex === index ? 'bg-primary p-1' : 'bg-primary/50'
+              'w-1.5 h-1.5 rounded-full transition-all duration-300', // Smaller dots
+              currentIndex === index ? 'bg-primary p-0.5' : 'bg-primary/50'
             )}
             onClick={() => setCurrentIndex(index)}
             aria-label={`Go to image ${index + 1}`}

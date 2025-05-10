@@ -107,8 +107,8 @@ export default function EditProfilePage() {
 
   if (authIsLoading && !user) {
     return (
-      <div className="container max-w-screen-md mx-auto px-4 md:px-6 py-12 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container max-w-screen-md mx-auto px-2 md:px-4 py-8 flex justify-center"> {/* Reduced padding */}
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -116,72 +116,72 @@ export default function EditProfilePage() {
   if (!user) {
     // This should ideally be handled by AuthenticatedLayout redirecting to login
     return (
-      <div className="container max-w-screen-md mx-auto px-4 md:px-6 py-12 text-center">
-        <p>Please log in to edit your profile.</p>
+      <div className="container max-w-screen-md mx-auto px-2 md:px-4 py-8 text-center"> {/* Reduced padding */}
+        <p className="text-sm">Please log in to edit your profile.</p>
       </div>
     );
   }
 
   return (
-    <div className="container max-w-screen-md mx-auto px-4 md:px-6 py-8 md:py-12">
-      <Card className="shadow-xl">
-        <CardHeader className="items-center">
-          <UserCircle className="h-16 w-16 text-primary mb-3" />
-          <CardTitle className="text-2xl md:text-3xl text-center">Edit Profile</CardTitle>
-          <CardDescription className="text-center">Update your personal information and address.</CardDescription>
+    <div className="container max-w-screen-md mx-auto px-2 md:px-4 py-4 md:py-6"> {/* Reduced padding */}
+      <Card className="shadow-lg">
+        <CardHeader className="items-center p-4"> {/* Reduced padding */}
+          <UserCircle className="h-12 w-12 text-primary mb-2.5" /> {/* Reduced icon size and margin */}
+          <CardTitle className="text-xl md:text-2xl text-center">Edit Profile</CardTitle> {/* Reduced font size */}
+          <CardDescription className="text-center text-xs">Update your personal information and address.</CardDescription> {/* Reduced font size */}
         </CardHeader>
-        <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <CardContent className="p-4"> {/* Reduced padding */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5"> {/* Reduced spacing */}
             {/* Personal Information Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground border-b pb-2 mb-3">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3"> {/* Reduced spacing */}
+              <h3 className="text-base font-semibold text-foreground border-b pb-1.5 mb-2.5">Personal Information</h3> {/* Reduced font size, padding, margin */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3"> {/* Reduced gap */}
                 <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" {...form.register('name')} className="mt-1" />
-                  {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+                  <Label htmlFor="name" className="text-sm">Full Name</Label>
+                  <Input id="name" {...form.register('name')} className="mt-1 h-9 text-sm" /> {/* Reduced height, font size */}
+                  {form.formState.errors.name && <p className="text-xs text-destructive mt-0.5">{form.formState.errors.name.message}</p>} {/* Reduced font size and margin */}
                 </div>
                 <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" {...form.register('email')} readOnly className="mt-1 bg-muted/50 cursor-not-allowed" />
-                  <p className="text-xs text-muted-foreground mt-1">Email cannot be changed.</p>
+                  <Label htmlFor="email" className="text-sm">Email Address</Label>
+                  <Input id="email" {...form.register('email')} readOnly className="mt-1 h-9 text-sm bg-muted/50 cursor-not-allowed" /> {/* Reduced height, font size */}
+                  <p className="text-xs text-muted-foreground mt-0.5">Email cannot be changed.</p> {/* Reduced font size and margin */}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3"> {/* Reduced gap */}
                 <div>
-                  <Label htmlFor="phoneNumber">Primary Phone Number</Label>
-                  <Input id="phoneNumber" type="tel" {...form.register('phoneNumber')} className="mt-1" placeholder="+254700111222" />
-                  {form.formState.errors.phoneNumber && <p className="text-sm text-destructive mt-1">{form.formState.errors.phoneNumber.message}</p>}
+                  <Label htmlFor="phoneNumber" className="text-sm">Primary Phone Number</Label>
+                  <Input id="phoneNumber" type="tel" {...form.register('phoneNumber')} className="mt-1 h-9 text-sm" placeholder="+254700111222" /> {/* Reduced height, font size */}
+                  {form.formState.errors.phoneNumber && <p className="text-xs text-destructive mt-0.5">{form.formState.errors.phoneNumber.message}</p>} {/* Reduced font size and margin */}
                 </div>
                 <div>
-                  <Label htmlFor="alternatePhoneNumber">Alternate Phone Number (Optional)</Label>
-                  <Input id="alternatePhoneNumber" type="tel" {...form.register('alternatePhoneNumber')} className="mt-1" placeholder="+254700333444" />
-                  {form.formState.errors.alternatePhoneNumber && <p className="text-sm text-destructive mt-1">{form.formState.errors.alternatePhoneNumber.message}</p>}
+                  <Label htmlFor="alternatePhoneNumber" className="text-sm">Alternate Phone (Optional)</Label>
+                  <Input id="alternatePhoneNumber" type="tel" {...form.register('alternatePhoneNumber')} className="mt-1 h-9 text-sm" placeholder="+254700333444" /> {/* Reduced height, font size */}
+                  {form.formState.errors.alternatePhoneNumber && <p className="text-xs text-destructive mt-0.5">{form.formState.errors.alternatePhoneNumber.message}</p>} {/* Reduced font size and margin */}
                 </div>
               </div>
             </div>
 
             {/* Address Information Section */}
-            <div className="space-y-4">
-               <h3 className="text-lg font-semibold text-foreground border-b pb-2 mb-3">Address Information</h3>
+            <div className="space-y-3"> {/* Reduced spacing */}
+               <h3 className="text-base font-semibold text-foreground border-b pb-1.5 mb-2.5">Address Information</h3> {/* Reduced font size, padding, margin */}
               <div>
-                <Label htmlFor="address.street">Street Address</Label>
-                <Input id="address.street" {...form.register('address.street')} className="mt-1" placeholder="e.g. 123 Bakery St, Apt 4B" />
-                {form.formState.errors.address?.street && <p className="text-sm text-destructive mt-1">{form.formState.errors.address.street.message}</p>}
+                <Label htmlFor="address.street" className="text-sm">Street Address</Label>
+                <Input id="address.street" {...form.register('address.street')} className="mt-1 h-9 text-sm" placeholder="e.g. 123 Bakery St, Apt 4B" /> {/* Reduced height, font size */}
+                {form.formState.errors.address?.street && <p className="text-xs text-destructive mt-0.5">{form.formState.errors.address.street.message}</p>} {/* Reduced font size and margin */}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3"> {/* Reduced gap */}
                 <div>
-                  <Label htmlFor="address.city">City</Label>
-                  <Input id="address.city" {...form.register('address.city')} className="mt-1" placeholder="Nairobi" />
-                  {form.formState.errors.address?.city && <p className="text-sm text-destructive mt-1">{form.formState.errors.address.city.message}</p>}
+                  <Label htmlFor="address.city" className="text-sm">City</Label>
+                  <Input id="address.city" {...form.register('address.city')} className="mt-1 h-9 text-sm" placeholder="Nairobi" /> {/* Reduced height, font size */}
+                  {form.formState.errors.address?.city && <p className="text-xs text-destructive mt-0.5">{form.formState.errors.address.city.message}</p>} {/* Reduced font size and margin */}
                 </div>
                 <div>
-                  <Label htmlFor="address.pinCode">Pin Code</Label>
-                  <Input id="address.pinCode" {...form.register('address.pinCode')} className="mt-1" placeholder="00100"/>
-                  {form.formState.errors.address?.pinCode && <p className="text-sm text-destructive mt-1">{form.formState.errors.address.pinCode.message}</p>}
+                  <Label htmlFor="address.pinCode" className="text-sm">Pin Code</Label>
+                  <Input id="address.pinCode" {...form.register('address.pinCode')} className="mt-1 h-9 text-sm" placeholder="00100"/> {/* Reduced height, font size */}
+                  {form.formState.errors.address?.pinCode && <p className="text-xs text-destructive mt-0.5">{form.formState.errors.address.pinCode.message}</p>} {/* Reduced font size and margin */}
                 </div>
                 <div>
-                  <Label htmlFor="address.addressType">Address Type</Label>
+                  <Label htmlFor="address.addressType" className="text-sm">Address Type</Label>
                   <Controller
                     control={form.control}
                     name="address.addressType"
@@ -190,7 +190,7 @@ export default function EditProfilePage() {
                         onValueChange={(value) => field.onChange(value as AddressType)}
                         value={field.value}
                       >
-                        <SelectTrigger id="address.addressType" className="mt-1">
+                        <SelectTrigger id="address.addressType" className="mt-1 h-9 text-sm"> {/* Reduced height, font size */}
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -201,13 +201,13 @@ export default function EditProfilePage() {
                       </Select>
                     )}
                   />
-                  {form.formState.errors.address?.addressType && <p className="text-sm text-destructive mt-1">{form.formState.errors.address.addressType.message}</p>}
+                  {form.formState.errors.address?.addressType && <p className="text-xs text-destructive mt-0.5">{form.formState.errors.address.addressType.message}</p>} {/* Reduced font size and margin */}
                 </div>
               </div>
             </div>
             
-            <Button type="submit" className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3" disabled={form.formState.isSubmitting || authIsLoading}>
-              {form.formState.isSubmitting || authIsLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+            <Button type="submit" size="sm" className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground text-sm py-2.5" disabled={form.formState.isSubmitting || authIsLoading}> {/* Reduced size, font size, padding */}
+              {form.formState.isSubmitting || authIsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Save Changes
             </Button>
           </form>
