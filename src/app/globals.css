@@ -53,49 +53,49 @@
   }
 
   .dark {
-    --background: 33 15% 15%; /* Dark Brown */
-    --foreground: 40 30% 90%; /* Light Beige/Cream */
+    --background: 33 10% 12%; /* Darker, richer brown for background */
+    --foreground: 40 25% 88%; /* Lighter beige for text */
 
-    --muted: 33 15% 25%;
-    --muted-foreground: 40 30% 70%;
+    --muted: 33 10% 20%; /* Slightly lighter dark brown for muted elements */
+    --muted-foreground: 40 20% 65%; /* Softer beige for muted text */
 
-    --popover: 33 15% 12%;
-    --popover-foreground: 40 30% 90%;
+    --popover: 33 10% 9%; /* Very dark brown for popovers */
+    --popover-foreground: 40 25% 88%;
 
-    --card: 33 15% 12%;
-    --card-foreground: 40 30% 90%;
+    --card: 33 10% 15%; /* Dark brown for card backgrounds, slightly lighter than main bg */
+    --card-foreground: 40 25% 88%;
 
-    --border: 33 15% 35%;
-    --input: 33 15% 30%;
+    --border: 33 10% 30%; /* Muted dark brown for borders */
+    --input: 33 10% 25%; /* Darker input background */
 
-    --primary: 33 23% 60%; /* Slightly lighter Warm Brown for dark mode */
-    --primary-foreground: 33 15% 10%; /* Dark text on primary */
+    --primary: 33 20% 65%; /* Warm Brown, slightly desaturated and lighter for dark mode */
+    --primary-foreground: 33 10% 10%; /* Very dark text on primary for contrast */
 
-    --secondary: 33 15% 30%;
-    --secondary-foreground: 40 30% 90%;
+    --secondary: 33 10% 28%; /* Darker secondary color */
+    --secondary-foreground: 40 25% 85%; /* Light text on secondary */
 
-    --accent: 13 65% 65%; /* Slightly adjusted Terracotta */
-    --accent-foreground: 0 0% 10%;
+    --accent: 13 60% 60%; /* Terracotta, slightly desaturated for dark mode */
+    --accent-foreground: 0 0% 100%; /* White text on accent */
 
-    --destructive: 0 63% 40%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 60% 50%; /* Darker, slightly desaturated red */
+    --destructive-foreground: 0 0% 95%;
 
-    --ring: 33 23% 60%;
+    --ring: 33 20% 65%; /* Primary color for rings */
 
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 12 70% 65%;
+    --chart-2: 173 50% 45%;
+    --chart-3: 197 30% 30%;
+    --chart-4: 43 70% 70%;
+    --chart-5: 27 80% 70%;
 
-    --sidebar-background: 33 15% 10%;
-    --sidebar-foreground: 40 30% 90%;
-    --sidebar-primary: 33 23% 60%;
-    --sidebar-primary-foreground: 33 15% 10%;
-    --sidebar-accent: 13 65% 65%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 33 15% 25%;
-    --sidebar-ring: 33 23% 60%;
+    --sidebar-background: 33 10% 8%; /* Darkest for sidebar */
+    --sidebar-foreground: 40 25% 88%;
+    --sidebar-primary: 33 20% 65%;
+    --sidebar-primary-foreground: 33 10% 10%;
+    --sidebar-accent: 13 60% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 33 10% 20%;
+    --sidebar-ring: 33 20% 65%;
   }
 }
 
@@ -108,5 +108,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Smooth transition for color changes */
+    @apply transition-colors duration-300 ease-in-out;
   }
 }
