@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -109,9 +110,9 @@ interface FormControlProps extends Omit<React.ComponentPropsWithoutRef<typeof Sl
 }
 
 const FormControl = React.forwardRef<
-  React.ElementRef<typeof Slot>,
-  FormControlProps // Use the more specific props type
->(({ children, ...slotProps }, ref) => { // Destructure: `children` is the <Input/>, `slotProps` are attributes for Slot.
+  HTMLElement, // Changed ref type for better general compatibility with DOM elements via Slot
+  FormControlProps
+>(({ children, ...slotProps }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
   return (
@@ -124,9 +125,9 @@ const FormControl = React.forwardRef<
           : `${formDescriptionId} ${formMessageId}`
       }
       aria-invalid={!!error}
-      {...slotProps} // Spread only the remaining props intended for Slot to merge.
+      {...slotProps}
     >
-      {children} {/* Pass the single child element here. */}
+      {children}
     </Slot>
   );
 });
