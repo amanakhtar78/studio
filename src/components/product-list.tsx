@@ -5,34 +5,19 @@ import { cn } from '@/lib/utils';
 
 interface ProductListProps {
   category: Category;
-  allProducts: Product[]; // All products from the store
-  searchQuery?: string;
+  products: Product[]; // This list is pre-filtered and pre-sorted by the parent.
   className?: string;
 }
 
-export function ProductList({ category, allProducts, searchQuery, className }: ProductListProps) {
-  // API product.category is a string like "men's clothing"
-  // Category.name is like "Men's Clothing"
-  // Filter products belonging to the current category
-  let categoryProducts = allProducts.filter(p => p.category.toLowerCase() === category.name.toLowerCase());
+export function ProductList({ category, products, className }: ProductListProps) {
+  // All filtering and sorting is now done in page.tsx by the parent component.
+  // This component just displays the products it's given for the specified category.
 
-  if (searchQuery && searchQuery.trim() !== '') {
-    const lowercasedQuery = searchQuery.toLowerCase();
-    categoryProducts = categoryProducts.filter(product =>
-      product.title.toLowerCase().includes(lowercasedQuery) || // API uses title
-      product.description.toLowerCase().includes(lowercasedQuery)
-    );
-  }
-
-  if (categoryProducts.length === 0 && searchQuery && searchQuery.trim() !== '') {
-    return null;
-  }
-  
   return (
     <section 
       id={category.slug} 
       className={cn(
-        "py-8 md:py-12 scroll-mt-24", 
+        "py-8 md:py-12 scroll-mt-24", // scroll-mt adjusted for sticky header/filters
         className 
       )}
     >
@@ -40,17 +25,15 @@ export function ProductList({ category, allProducts, searchQuery, className }: P
         <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6 md:mb-8 text-center md:text-left">
           {category.name}
         </h2>
-        {categoryProducts.length > 0 ? (
+        {products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {categoryProducts.map((product) => (
+            {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground text-center">
-            {searchQuery && searchQuery.trim() !== ''
-              ? `No products found matching "${searchQuery}" in ${category.name}.`
-              : `No products available in ${category.name} at the moment.`}
+          <p className="text-muted-foreground text-center py-8">
+            No products found in {category.name} matching your current filters.
           </p>
         )}
       </div>

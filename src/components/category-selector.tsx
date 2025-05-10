@@ -12,6 +12,9 @@ interface CategorySelectorProps {
 
 export function CategorySelector({ categories }: CategorySelectorProps) {
   const [isMounted, setIsMounted] = useState(false);
+  // Approximate height of Navbar (4rem = 64px) + FilterBar (variable, ~6rem or more = ~96px). Total ~10rem = 160px
+  // Let's try a fixed value or calculate dynamically if needed. For now, fixed.
+  const stickyOffset = 'top-[10rem] md:top-[10rem]'; // Adjust this value as needed based on actual combined height
 
   useEffect(() => {
     setIsMounted(true);
@@ -20,10 +23,10 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
   const handleScrollToCategory = (slug: string) => {
     const element = document.getElementById(slug);
     if (element) {
-      // Adjust scroll offset if navbar is sticky
-      const navbarHeight = 64; // Approximate height of the navbar
+      // Navbar height + Filter bar height + some padding
+      const headerOffset = 160 + 20; // Approx 160px for navbar + filter bar, 20px for padding
       const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-      const offsetPosition = elementPosition - navbarHeight - 20; // Extra 20px padding
+      const offsetPosition = elementPosition - headerOffset;
 
       window.scrollTo({
         top: offsetPosition,
@@ -33,9 +36,9 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
   };
 
 
-  if (!isMounted || !categories || categories.length === 0) { // Check if categories are loaded
+  if (!isMounted || !categories || categories.length === 0) {
     return (
-      <div className="py-4 md:py-6 sticky top-16 bg-background/90 backdrop-blur-sm z-40 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6">
+      <div className={`py-4 md:py-6 sticky ${stickyOffset} bg-background/90 backdrop-blur-sm z-30 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6`}>
         <div className="container max-w-screen-2xl px-0">
           <div className="flex space-x-3 overflow-x-auto pb-2 no-scrollbar">
             {[...Array(4)].map((_, i) => (
@@ -49,7 +52,7 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
   
 
   return (
-    <div className="py-4 md:py-6 sticky top-16 bg-background/90 backdrop-blur-sm z-40 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6">
+    <div className={`py-4 md:py-6 sticky ${stickyOffset} bg-background/90 backdrop-blur-sm z-30 shadow-sm -mx-4 px-4 md:-mx-6 md:px-6`}>
       <div className="container max-w-screen-2xl px-0">
         <div className="flex space-x-3 overflow-x-auto pb-2 no-scrollbar">
           {categories.map((category) => (
@@ -68,3 +71,5 @@ export function CategorySelector({ categories }: CategorySelectorProps) {
     </div>
   );
 }
+
+```
