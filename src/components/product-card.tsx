@@ -62,22 +62,22 @@ export function ProductCard({ product }: ProductCardProps) {
       <CardFooter className="p-3 pt-0"> {/* Reduced padding */}
         {quantityInCart === 0 ? (
           <Button
-            size="sm" /* Smaller button */
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-xs" /* Reduced text size */
+            size="sm" 
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm" 
             disabled={!stockAvailable}
             onClick={handleAddToCart}
             aria-label={`Add ${product.title} to cart`}
           >
-            <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Add to Cart
+            <ShoppingCart className="mr-1.5 h-4 w-4" /> Add to Cart
           </Button>
         ) : (
           <div className="flex items-center justify-between w-full">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDecreaseQuantity} aria-label="Decrease quantity"> {/* Smaller icon button */}
-              <Minus className="h-3.5 w-3.5" />
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleDecreaseQuantity} aria-label="Decrease quantity">
+              <Minus className="h-4 w-4" />
             </Button>
-            <span className="text-base font-medium mx-3 tabular-nums">{quantityInCart}</span> {/* Reduced font size & margin */}
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!stockAvailable}> {/* Smaller icon button */}
-              <Plus className="h-3.5 w-3.5" />
+            <span className="text-sm font-medium mx-2 tabular-nums">{quantityInCart}</span>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleIncreaseQuantity} aria-label="Increase quantity" disabled={!stockAvailable}>
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
         )}

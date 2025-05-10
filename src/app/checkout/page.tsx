@@ -155,17 +155,17 @@ export default function CheckoutPage() {
                     <h3 className="font-semibold text-sm">{item.title}</h3> {/* Reduced font size */}
                     <p className="text-xs text-muted-foreground">KES {item.price.toLocaleString()}</p> {/* Reduced font size */}
                   </div>
-                  <div className="flex items-center space-x-1.5"> {/* Reduced spacing */}
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity - 1)}> {/* Smaller button */}
-                      <Minus className="h-3.5 w-3.5" />
+                  <div className="flex items-center space-x-1"> {/* Reduced spacing */}
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity - 1)}> 
+                      <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="text-base font-medium w-6 text-center tabular-nums">{item.cartQuantity}</span> {/* Reduced font size and width */}
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity + 1)} disabled={!item.stockAvailability}> {/* Smaller button */}
-                      <Plus className="h-3.5 w-3.5" />
+                    <span className="text-sm font-medium w-8 text-center tabular-nums">{item.cartQuantity}</span> 
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity + 1)} disabled={!item.stockAvailability}> 
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="font-semibold w-20 text-right tabular-nums text-sm">KES {(item.price * item.cartQuantity).toLocaleString()}</p> {/* Reduced width and font size */}
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-8 w-8" onClick={() => updateItemQuantity(item.id.toString(), 0)}> {/* Smaller button */}
+                  <p className="font-semibold w-24 text-right tabular-nums text-sm">KES {(item.price * item.cartQuantity).toLocaleString()}</p> 
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 h-9 w-9" onClick={() => updateItemQuantity(item.id.toString(), 0)}> 
                      <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -280,3 +280,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
