@@ -1,7 +1,6 @@
 
 'use client';
 import { Banner } from '@/components/banner';
-// import { CategorySelector } from '@/components/category-selector'; // Keep for now, maybe remove later
 import { ProductList } from '@/components/product-list';
 import { Separator } from '@/components/ui/separator';
 import { bannerImages } from '@/lib/mock-data'; 
@@ -10,10 +9,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Search, AlertTriangle, Loader2, FilterIcon } from 'lucide-react';
+import { Search, AlertTriangle, Loader2, FilterIcon, Trash2 } from 'lucide-react';
 import { AboutTimeline } from '@/components/about-timeline';
 import { WhyChooseUs } from '@/components/why-choose-us';
 import { FilterSidebar } from '@/components/filter-sidebar';
+import { FilterControls } from '@/components/filter-controls';
 
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -51,16 +51,22 @@ export default function HomePage() {
     setSearchQuery(event.target.value);
   };
 
-  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => setMinPrice(e.target.value);
-  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => setMaxPrice(e.target.value);
-
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedGlobalCategory('all');
     setSortOption('relevance');
     setMinPrice('');
     setMaxPrice('');
-    setIsFilterSidebarOpen(false); // Close sidebar after clearing
+    setIsFilterSidebarOpen(false); // Close mobile sidebar if open
+  };
+
+  const filterControlsProps = {
+    sortOption, setSortOption,
+    selectedGlobalCategory, setSelectedGlobalCategory,
+    allCategories,
+    minPrice, setMinPrice,
+    maxPrice, setMaxPrice,
+    categoryStatus
   };
 
   const processedProducts = useMemo(() => {
@@ -173,7 +179,7 @@ export default function HomePage() {
         <Banner images={bannerImages} />
       </div>
 
-      {/* Search and Filter Trigger Section */}
+      {/* Search and Filter Trigger Section - Sticky */}
       <div className="container max-w-screen-2xl mx-auto px-2 md:px-4 py-3 md:py-4 sticky top-16 bg-background/95 backdrop-blur-sm z-40 shadow-sm -mx-2 md:-mx-4 site-padding-override-sm">
          <style jsx global>{`
             .site-padding-override-sm {
@@ -188,7 +194,6 @@ export default function HomePage() {
             }
           `}</style>
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Search Input */}
           <div className="relative flex-grow">
             <Label htmlFor="search-input" className="sr-only">Search products</Label>
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -202,12 +207,12 @@ export default function HomePage() {
               aria-label="Search products"
             />
           </div>
-          {/* Filter Trigger Button */}
+          {/* Mobile Filter Trigger Button */}
           <Button 
             variant="outline" 
             size="icon" 
             onClick={() => setIsFilterSidebarOpen(true)} 
-            className="h-10 w-10 flex-shrink-0"
+            className="h-10 w-10 flex-shrink-0 md:hidden" // Hidden on md and larger screens
             aria-label="Open filters"
           >
             <FilterIcon className="h-4.5 w-4.5" />
@@ -215,65 +220,76 @@ export default function HomePage() {
         </div>
       </div>
       
+      {/* Mobile Filter Sidebar (Sheet) */}
       <FilterSidebar
         isOpen={isFilterSidebarOpen}
         onOpenChange={setIsFilterSidebarOpen}
-        sortOption={sortOption}
-        setSortOption={setSortOption}
-        selectedGlobalCategory={selectedGlobalCategory}
-        setSelectedGlobalCategory={setSelectedGlobalCategory}
-        allCategories={allCategories}
-        minPrice={minPrice}
-        setMinPrice={setMinPrice}
-        maxPrice={maxPrice}
-        setMaxPrice={setMaxPrice}
-        onClearFilters={handleClearFilters}
-        categoryStatus={categoryStatus}
+        {...filterControlsProps} // Spread props for filter controls
+        onClearFilters={handleClearFilters} // Pass clear handler
       />
       
-      {/* Product Display Area */}
-      <div className="mt-0"> 
-        {isLoadingData && isMounted && (
-            <div className="flex flex-col items-center justify-center min-h-[30vh]">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="mt-3 text-muted-foreground text-sm">Applying filters...</p>
-            </div>
-        )}
+      {/* Main Content Area */}
+      <div className="container max-w-screen-2xl mx-auto px-2 md:px-4 mt-4 md:mt-6">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+              {/* Desktop Filter Column */}
+              <aside className="hidden md:block md:w-60 lg:w-64 xl:w-72 space-y-3 sticky top-36 self-start max-h-[calc(100vh-10rem)] overflow-y-auto no-scrollbar rounded-lg border bg-card shadow-sm p-0">
+                  <div className="p-4 border-b">
+                    <h3 className="text-lg font-semibold text-foreground">Filters</h3>
+                  </div>
+                  <div className="p-4 space-y-5">
+                    <FilterControls {...filterControlsProps} />
+                  </div>
+                  <div className="p-4 border-t sticky bottom-0 bg-card/95 backdrop-blur-sm">
+                      <Button variant="outline" onClick={handleClearFilters} className="w-full text-sm">
+                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                          Clear Filters
+                      </Button>
+                  </div>
+              </aside>
 
-        {!isLoadingData && displayableSections.length === 0 && hasActiveFilters && (
-          <div className="container max-w-screen-2xl px-2 md:px-4 py-8 text-center">
-            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-3">No products match your criteria</h2>
-            <p className="text-muted-foreground text-sm">Try adjusting your search or filters.</p>
-          </div>
-        )}
+              {/* Product Listing Area */}
+              <main className="flex-grow min-w-0">
+                {isLoadingData && isMounted && (
+                    <div className="flex flex-col items-center justify-center min-h-[30vh] py-6">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <p className="mt-3 text-muted-foreground text-sm">Applying filters...</p>
+                    </div>
+                )}
 
-        {!isLoadingData && displayableSections.map(({ category, products: productsForSection }, index) => (
-          <div key={category.id}>
-            <ProductList
-              category={category}
-              products={productsForSection}
-              className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"} 
-            />
-            {index < displayableSections.length - 1 && (
-              <div className="container max-w-screen-2xl px-2 md:px-4">
-                <Separator className="my-6 md:my-8" />
-              </div>
-            )}
+                {!isLoadingData && displayableSections.length === 0 && hasActiveFilters && (
+                  <div className="py-8 text-center">
+                    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h2 className="text-xl font-semibold text-foreground mb-3">No products match your criteria</h2>
+                    <p className="text-muted-foreground text-sm">Try adjusting your search or filters.</p>
+                  </div>
+                )}
+
+                {!isLoadingData && displayableSections.map(({ category, products: productsForSection }, index) => (
+                  <div key={category.id}>
+                    <ProductList
+                      category={category}
+                      products={productsForSection}
+                      className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"} 
+                    />
+                    {index < displayableSections.length - 1 && (
+                        <Separator className="my-6 md:my-8" />
+                    )}
+                  </div>
+                ))}
+                
+                {!isLoadingData && allProducts.length === 0 && productStatus === 'succeeded' && !hasActiveFilters && (
+                  <div className="py-8 text-center">
+                    <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h2 className="text-xl font-semibold text-foreground mb-3">No products available</h2>
+                    <p className="text-muted-foreground text-sm">Please check back later.</p>
+                  </div>
+                )}
+              </main>
           </div>
-        ))}
-        
-        {!isLoadingData && allProducts.length === 0 && productStatus === 'succeeded' && !hasActiveFilters && (
-           <div className="container max-w-screen-2xl px-2 md:px-4 py-8 text-center">
-            <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-3">No products available</h2>
-            <p className="text-muted-foreground text-sm">Please check back later.</p>
-          </div>
-        )}
       </div>
 
 
-      <div className="container max-w-screen-2xl px-2 md:px-4 py-6 md:py-8">
+      <div className="container max-w-screen-2xl px-2 md:px-4 py-6 md:py-8 mt-6">
         <Separator className="mb-6 md:mb-8" />
         <AboutTimeline />
       </div>
@@ -287,3 +303,4 @@ export default function HomePage() {
     </div>
   );
 }
+
