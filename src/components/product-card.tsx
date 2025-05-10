@@ -63,7 +63,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {quantityInCart === 0 ? (
           <Button
             size="sm" 
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-sm" 
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm" // Changed from bg-accent to bg-primary
             disabled={!stockAvailable}
             onClick={handleAddToCart}
             aria-label={`Add ${product.title} to cart`}
