@@ -103,18 +103,14 @@ const FormLabel = React.forwardRef<
 })
 FormLabel.displayName = "FormLabel"
 
-interface FormControlProps extends Omit<React.ComponentPropsWithoutRef<typeof Slot>, "children"> {
-  children: React.ReactElement;
-}
-
 const FormControl = React.forwardRef<
-  HTMLElement, // Changed from React.ElementRef<typeof Slot> for compatibility
-  FormControlProps
->(({ children, ...slotProps }, ref) => { // Use ...slotProps to avoid conflict if props had 'children'
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+  React.ElementRef<typeof Slot>,
+  React.ComponentPropsWithoutRef<typeof Slot>
+>(({ ...props }, ref) => {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
-    <Slot // This is where the error typically originates if children are not a single element
+    <Slot
       ref={ref}
       id={formItemId}
       aria-describedby={
@@ -123,12 +119,10 @@ const FormControl = React.forwardRef<
           : `${formDescriptionId} ${formMessageId}`
       }
       aria-invalid={!!error}
-      {...slotProps} // Spread other props to Slot
-    >
-      {children}
-    </Slot>
-  );
-});
+      {...props} // Slot will pick up its children from props
+    />
+  )
+})
 FormControl.displayName = "FormControl"
 
 const FormDescription = React.forwardRef<
