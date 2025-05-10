@@ -13,7 +13,7 @@ import { Search, AlertTriangle, Loader2, FilterIcon, Trash2 } from 'lucide-react
 import { AboutTimeline } from '@/components/about-timeline';
 import { WhyChooseUs } from '@/components/why-choose-us';
 import { FilterSidebar } from '@/components/filter-sidebar';
-import { FilterControls } from '@/components/filter-controls';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -60,13 +60,17 @@ export default function HomePage() {
     setIsFilterSidebarOpen(false); // Close mobile sidebar if open
   };
 
-  const filterControlsProps = {
+  // Props for mobile FilterSidebar
+  const filterSidebarProps = {
+    isOpen: isFilterSidebarOpen,
+    onOpenChange: setIsFilterSidebarOpen,
     sortOption, setSortOption,
     selectedGlobalCategory, setSelectedGlobalCategory,
     allCategories,
     minPrice, setMinPrice,
     maxPrice, setMaxPrice,
-    categoryStatus
+    categoryStatus,
+    onClearFilters: handleClearFilters
   };
 
   const processedProducts = useMemo(() => {
@@ -128,6 +132,7 @@ export default function HomePage() {
         if (selectedGlobalCategory !== 'all') {
           return { category, products: productsForCategory, shouldRender: category.name.toLowerCase() === selectedGlobalCategory.toLowerCase() };
         } else {
+          // If "All Categories" is selected, render a category section if it has products OR if no filters are active (to show all categories initially)
           return { category, products: productsForCategory, shouldRender: productsForCategory.length > 0 || !hasActiveFilters };
         }
       })
@@ -179,7 +184,7 @@ export default function HomePage() {
         <Banner images={bannerImages} />
       </div>
 
-      {/* Search and Filter Trigger Section - Sticky */}
+      {/* Search and Filter Section - Sticky */}
       <div className="container max-w-screen-2xl mx-auto px-2 md:px-4 py-3 md:py-4 sticky top-16 bg-background/95 backdrop-blur-sm z-40 shadow-sm -mx-2 md:-mx-4 site-padding-override-sm">
          <style jsx global>{`
             .site-padding-override-sm {
@@ -193,99 +198,158 @@ export default function HomePage() {
               }
             }
           `}</style>
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="relative flex-grow">
-            <Label htmlFor="search-input" className="sr-only">Search products</Label>
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="search-input"
-              type="search"
-              placeholder="Search treats..."
-              className="pl-8 pr-3 py-2 text-sm w-full h-10 rounded-md border-2 border-input focus:border-primary focus-visible:ring-primary/20"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              aria-label="Search products"
-            />
-          </div>
-          {/* Mobile Filter Trigger Button */}
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => setIsFilterSidebarOpen(true)} 
-            className="h-10 w-10 flex-shrink-0 md:hidden" // Hidden on md and larger screens
-            aria-label="Open filters"
-          >
-            <FilterIcon className="h-4.5 w-4.5" />
-          </Button>
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            {/* Search Input and Mobile Filter Trigger Wrapper */}
+            <div className="flex items-center gap-3 w-full md:w-auto md:flex-grow-0 md:min-w-[200px] lg:min-w-[250px] xl:min-w-[300px]">
+                <div className="relative flex-grow">
+                    <Label htmlFor="search-input" className="sr-only">Search products</Label>
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                    id="search-input"
+                    type="search"
+                    placeholder="Search treats..."
+                    className="pl-8 pr-3 py-2 text-sm w-full h-10 rounded-md border-2 border-input focus:border-primary focus-visible:ring-primary/20"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    aria-label="Search products"
+                    />
+                </div>
+                {/* Mobile Filter Trigger Button */}
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setIsFilterSidebarOpen(true)} 
+                    className="h-10 w-10 flex-shrink-0 md:hidden"
+                    aria-label="Open filters"
+                >
+                    <FilterIcon className="h-4.5 w-4.5" />
+                </Button>
+            </div>
+
+            {/* Desktop Filters - shown on md and larger, hidden on mobile */}
+            <div className="hidden md:flex flex-wrap items-center gap-2 lg:gap-3 flex-grow justify-start mt-2 md:mt-0">
+                {/* Sort By Select */}
+                <div className="flex-shrink-0">
+                    <Label htmlFor="sort-select-desktop" className="sr-only">Sort by</Label>
+                    <Select value={sortOption} onValueChange={setSortOption}>
+                    <SelectTrigger id="sort-select-desktop" className="h-10 text-sm w-auto min-w-[130px] lg:min-w-[150px]">
+                        <SelectValue placeholder="Sort by..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="relevance">Relevance</SelectItem>
+                        <SelectItem value="name-asc">Name: A-Z</SelectItem>
+                        <SelectItem value="name-desc">Name: Z-A</SelectItem>
+                        <SelectItem value="price-asc">Price: Low-High</SelectItem>
+                        <SelectItem value="price-desc">Price: High-Low</SelectItem>
+                        <SelectItem value="rating-desc">Rating: High-Low</SelectItem>
+                    </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Category Select */}
+                {categoryStatus === 'succeeded' && allCategories.length > 0 && (
+                    <div className="flex-shrink-0">
+                    <Label htmlFor="category-filter-desktop" className="sr-only">Category</Label>
+                    <Select value={selectedGlobalCategory} onValueChange={setSelectedGlobalCategory}>
+                        <SelectTrigger id="category-filter-desktop" className="h-10 text-sm w-auto min-w-[130px] lg:min-w-[150px]">
+                        <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {allCategories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.name}>
+                            {cat.name}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    </div>
+                )}
+                {categoryStatus === 'loading' && (
+                    <div className="h-10 w-[130px] lg:w-[150px] bg-muted rounded-md animate-pulse flex-shrink-0"></div>
+                )}
+
+                {/* Min Price Input */}
+                <div className="flex-shrink-0">
+                    <Label htmlFor="min-price-desktop" className="sr-only">Min Price</Label>
+                    <Input
+                    id="min-price-desktop"
+                    type="number"
+                    placeholder="Min KES"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="h-10 text-sm w-24 lg:w-28"
+                    min="0"
+                    />
+                </div>
+
+                {/* Max Price Input */}
+                <div className="flex-shrink-0">
+                    <Label htmlFor="max-price-desktop" className="sr-only">Max Price</Label>
+                    <Input
+                    id="max-price-desktop"
+                    type="number"
+                    placeholder="Max KES"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="h-10 text-sm w-24 lg:w-28"
+                    min="0"
+                    />
+                </div>
+                
+                {/* Clear Filters Button */}
+                <div className="flex-shrink-0">
+                    <Button variant="outline" onClick={handleClearFilters} className="h-10 text-sm">
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        Clear Filters
+                    </Button>
+                </div>
+            </div>
         </div>
       </div>
       
       {/* Mobile Filter Sidebar (Sheet) */}
-      <FilterSidebar
-        isOpen={isFilterSidebarOpen}
-        onOpenChange={setIsFilterSidebarOpen}
-        {...filterControlsProps} // Spread props for filter controls
-        onClearFilters={handleClearFilters} // Pass clear handler
-      />
+      <FilterSidebar {...filterSidebarProps} />
       
       {/* Main Content Area */}
       <div className="container max-w-screen-2xl mx-auto px-2 md:px-4 mt-4 md:mt-6">
-          <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-              {/* Desktop Filter Column */}
-              <aside className="hidden md:block md:w-60 lg:w-64 xl:w-72 space-y-3 sticky top-36 self-start max-h-[calc(100vh-10rem)] overflow-y-auto no-scrollbar rounded-lg border bg-card shadow-sm p-0">
-                  <div className="p-4 border-b">
-                    <h3 className="text-lg font-semibold text-foreground">Filters</h3>
-                  </div>
-                  <div className="p-4 space-y-5">
-                    <FilterControls {...filterControlsProps} />
-                  </div>
-                  <div className="p-4 border-t sticky bottom-0 bg-card/95 backdrop-blur-sm">
-                      <Button variant="outline" onClick={handleClearFilters} className="w-full text-sm">
-                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                          Clear Filters
-                      </Button>
-                  </div>
-              </aside>
+        <main className="flex-grow min-w-0">
+            {isLoadingData && isMounted && (
+                <div className="flex flex-col items-center justify-center min-h-[30vh] py-6">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <p className="mt-3 text-muted-foreground text-sm">Applying filters...</p>
+                </div>
+            )}
 
-              {/* Product Listing Area */}
-              <main className="flex-grow min-w-0">
-                {isLoadingData && isMounted && (
-                    <div className="flex flex-col items-center justify-center min-h-[30vh] py-6">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                        <p className="mt-3 text-muted-foreground text-sm">Applying filters...</p>
-                    </div>
-                )}
+            {!isLoadingData && displayableSections.length === 0 && hasActiveFilters && (
+                <div className="py-8 text-center">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-foreground mb-3">No products match your criteria</h2>
+                <p className="text-muted-foreground text-sm">Try adjusting your search or filters.</p>
+                </div>
+            )}
 
-                {!isLoadingData && displayableSections.length === 0 && hasActiveFilters && (
-                  <div className="py-8 text-center">
-                    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h2 className="text-xl font-semibold text-foreground mb-3">No products match your criteria</h2>
-                    <p className="text-muted-foreground text-sm">Try adjusting your search or filters.</p>
-                  </div>
+            {!isLoadingData && displayableSections.map(({ category, products: productsForSection }, index) => (
+                <div key={category.id}>
+                <ProductList
+                    category={category}
+                    products={productsForSection}
+                    className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"} 
+                />
+                {index < displayableSections.length - 1 && (
+                    <Separator className="my-6 md:my-8" />
                 )}
-
-                {!isLoadingData && displayableSections.map(({ category, products: productsForSection }, index) => (
-                  <div key={category.id}>
-                    <ProductList
-                      category={category}
-                      products={productsForSection}
-                      className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"} 
-                    />
-                    {index < displayableSections.length - 1 && (
-                        <Separator className="my-6 md:my-8" />
-                    )}
-                  </div>
-                ))}
-                
-                {!isLoadingData && allProducts.length === 0 && productStatus === 'succeeded' && !hasActiveFilters && (
-                  <div className="py-8 text-center">
-                    <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h2 className="text-xl font-semibold text-foreground mb-3">No products available</h2>
-                    <p className="text-muted-foreground text-sm">Please check back later.</p>
-                  </div>
-                )}
-              </main>
-          </div>
+                </div>
+            ))}
+            
+            {!isLoadingData && allProducts.length === 0 && productStatus === 'succeeded' && !hasActiveFilters && (
+                <div className="py-8 text-center">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-foreground mb-3">No products available</h2>
+                <p className="text-muted-foreground text-sm">Please check back later.</p>
+                </div>
+            )}
+        </main>
       </div>
 
 
@@ -303,4 +367,3 @@ export default function HomePage() {
     </div>
   );
 }
-
