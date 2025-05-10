@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -104,13 +103,12 @@ const FormLabel = React.forwardRef<
 })
 FormLabel.displayName = "FormLabel"
 
-// Define explicit props for FormControl to ensure 'children' is handled correctly.
-interface FormControlProps extends Omit<React.ComponentPropsWithoutRef<typeof Slot>, 'children'> {
-  children: React.ReactElement; // Expect a single React element as children
+interface FormControlProps extends Omit<React.ComponentPropsWithoutRef<typeof Slot>, "children"> {
+  children: React.ReactElement;
 }
 
 const FormControl = React.forwardRef<
-  HTMLElement, // Changed ref type for better general compatibility with DOM elements via Slot
+  HTMLElement,
   FormControlProps
 >(({ children, ...slotProps }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
