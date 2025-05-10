@@ -108,13 +108,13 @@ interface FormControlProps extends Omit<React.ComponentPropsWithoutRef<typeof Sl
 }
 
 const FormControl = React.forwardRef<
-  HTMLElement,
+  HTMLElement, // Changed from React.ElementRef<typeof Slot> for compatibility
   FormControlProps
->(({ children, ...slotProps }, ref) => {
+>(({ children, ...slotProps }, ref) => { // Use ...slotProps to avoid conflict if props had 'children'
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
   return (
-    <Slot
+    <Slot // This is where the error typically originates if children are not a single element
       ref={ref}
       id={formItemId}
       aria-describedby={
@@ -123,7 +123,7 @@ const FormControl = React.forwardRef<
           : `${formDescriptionId} ${formMessageId}`
       }
       aria-invalid={!!error}
-      {...slotProps}
+      {...slotProps} // Spread other props to Slot
     >
       {children}
     </Slot>
