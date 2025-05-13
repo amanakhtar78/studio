@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -53,18 +52,20 @@ export default function ProductImagesPage() {
         setError(null);
       }
       try {
-        // Initially fetch only distinct classifications to populate the first dropdown
-        // Or fetch all for "all" option if that's the initial state.
-        // For now, let's assume it fetches classifications first if possible, or a small subset of products.
-        // If the API only gives all products, we must fetch all.
+        // Fetch all products initially to populate classifications and potentially "All Classifications" view
         const response = await fetchGlobalViewDataAPI('792', sClientSecret); 
         if (isMountedGuard) {
-          if (response.data && Array.isArray(response.data.data)) { // API wraps data in a 'data' property
-            setInitialProductsLoad(response.data.data);
-            // if no classification selected initially, don't set displayedProducts yet
-            // if a default classification should be active, filter and setDisplayedProducts here
+          // API returns an array directly in response.data
+          if (response.data && Array.isArray(response.data)) { 
+            setInitialProductsLoad(response.data);
+            // If no classification is selected initially, or "all" is selected,
+            // set displayedProducts to the full initial load.
+            if (!selectedClassification || selectedClassification === 'all') {
+              setDisplayedProducts(response.data);
+            }
           } else {
             setInitialProductsLoad([]);
+            setDisplayedProducts([]);
             setError('Received invalid initial product data format.');
           }
         }
@@ -72,6 +73,7 @@ export default function ProductImagesPage() {
         if (isMountedGuard) {
           setError(err.response?.data?.message || err.message || 'Failed to fetch initial product data.');
           setInitialProductsLoad([]);
+          setDisplayedProducts([]);
         }
       } finally {
         if (isMountedGuard) setIsLoadingInitial(false);
@@ -79,14 +81,14 @@ export default function ProductImagesPage() {
     };
     fetchInitialData();
     return () => { isMountedGuard = false; };
-  }, [sClientSecret]);
+  }, [sClientSecret]); // Removed selectedClassification from deps to prevent re-fetch on its change before full filter logic runs
 
 
   useEffect(() => {
     let isMountedGuard = true;
     const fetchProductsByClassification = async () => {
       if (!sClientSecret || !selectedClassification) {
-         if (isMountedGuard) setDisplayedProducts([]); 
+         if (isMountedGuard) setDisplayedProducts(initialProductsLoad); // Show all if no specific class selected
         return;
       }
       if (selectedClassification === 'all') {
@@ -99,10 +101,12 @@ export default function ProductImagesPage() {
         setError(null);
       }
       try {
+        // The API is called with the classification parameter
         const response = await fetchGlobalViewDataAPI('792', sClientSecret, selectedClassification);
         if (isMountedGuard) {
-          if (response.data && Array.isArray(response.data.data)) {
-            setDisplayedProducts(response.data.data);
+          // API returns an array directly in response.data
+          if (response.data && Array.isArray(response.data)) {
+            setDisplayedProducts(response.data);
           } else {
             setDisplayedProducts([]);
             setError('Received invalid product data format for classification.');
@@ -118,47 +122,47 @@ export default function ProductImagesPage() {
       }
     };
 
-    if (selectedClassification) {
+    // Only fetch if a specific classification (not 'all' and not empty) is selected
+    if (selectedClassification && selectedClassification !== 'all') {
         fetchProductsByClassification();
+    } else if (selectedClassification === 'all') {
+        // If 'all' is selected, use the initially loaded full list
+        if (isMountedGuard) setDisplayedProducts(initialProductsLoad);
     } else {
-        // If no classification is selected and initialProductsLoad is populated, 
-        // this implies we might want to show all products or a message.
-        // For now, clearing displayed products if no specific classification is chosen
-        // (unless 'all' is handled above).
-        if (isMountedGuard && selectedClassification !== 'all') setDisplayedProducts([]);
+        // If no classification is selected (initial state before user interaction), 
+        // use the initially loaded full list (which might be empty if initial load hasn't finished)
+         if (isMountedGuard) setDisplayedProducts(initialProductsLoad);
     }
     return () => { isMountedGuard = false; };
   }, [selectedClassification, sClientSecret, initialProductsLoad]);
 
 
   const distinctClassifications = useMemo(() => {
+    // Populate classifications from the full initial load, ensuring 'all' is an option
     return ['all', ...new Set(initialProductsLoad.map(p => p["ITEM CLASSIFICATION"] || 'N/A').filter(Boolean).sort())];
   }, [initialProductsLoad]);
 
   const distinctCategories = useMemo(() => {
-    const source = displayedProducts.length > 0 ? displayedProducts : initialProductsLoad;
-    return ['all', ...new Set(source.map(p => p["ITEM CATEGORY"] || 'N/A').filter(Boolean).sort())];
-  }, [initialProductsLoad, displayedProducts]);
+    // Categories should be derived from the currently displayedProducts (after classification filter)
+    return ['all', ...new Set(displayedProducts.map(p => p["ITEM CATEGORY"] || 'N/A').filter(Boolean).sort())];
+  }, [displayedProducts]);
 
   const distinctSubCategories = useMemo(() => {
-    const source = displayedProducts.length > 0 ? displayedProducts : initialProductsLoad;
-    let relevantSubCategories: string[];
-    if (categoryFilter === 'all') {
-        relevantSubCategories = source.map(p => p["ITEM SUB CATEGORY"] || 'N/A');
-    } else {
-        relevantSubCategories = source
-            .filter(p => p["ITEM CATEGORY"] === categoryFilter)
-            .map(p => p["ITEM SUB CATEGORY"] || 'N/A');
+    let sourceForSubCategories = displayedProducts;
+    if (categoryFilter !== 'all') {
+        sourceForSubCategories = displayedProducts.filter(p => p["ITEM CATEGORY"] === categoryFilter);
     }
-    return ['all', ...new Set(relevantSubCategories.filter(Boolean).sort())];
-  }, [initialProductsLoad, displayedProducts, categoryFilter]);
+    return ['all', ...new Set(sourceForSubCategories.map(p => p["ITEM SUB CATEGORY"] || 'N/A').filter(Boolean).sort())];
+  }, [displayedProducts, categoryFilter]);
   
   useEffect(() => {
+    // Reset sub-category filter when category or classification changes
     setSubCategoryFilter('all'); 
   }, [categoryFilter, selectedClassification]);
 
 
   const clientFilteredProducts = useMemo(() => {
+    // This filtering happens client-side on `displayedProducts`
     return displayedProducts.filter(product => {
       const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.trim() !== '');
       const matchesSearch = searchTerms.length === 0 || searchTerms.every(term => 
@@ -184,6 +188,8 @@ export default function ProductImagesPage() {
     setCategoryFilter('all');
     setSubCategoryFilter('all');
     setImageStatusFilter('all');
+    // Optionally, reset selectedClassification to 'all' or empty if desired
+    // setSelectedClassification('all'); // This would re-trigger data fetching for all
   };
 
   const handleOpenUploadDialog = (product: AdminProduct) => {
@@ -196,13 +202,15 @@ export default function ProductImagesPage() {
       list.map(p => p["ITEM CODE"] === itemCode ? { ...p, "IMAGEPATH": newImagePath } : p);
 
     setDisplayedProducts(prev => updateProductList(prev));
-    if (selectedClassification === 'all') { // Also update initialProductsLoad if "All Classifications" is active
-        setInitialProductsLoad(prev => updateProductList(prev));
+    // If "All Classifications" was active OR if the updated product matches the current classification,
+    // also update the initialProductsLoad to reflect the change globally.
+    if (selectedClassification === 'all' || 
+        initialProductsLoad.find(p => p["ITEM CODE"] === itemCode && p["ITEM CLASSIFICATION"] === selectedClassification)) {
+      setInitialProductsLoad(prev => updateProductList(prev));
     }
     
     setIsUploadDialogOpen(false);
     setSelectedProductForUpload(null);
-    // Toast is handled within the dialog
   };
   
   const isLoading = isLoadingInitial || isLoadingFiltered;
@@ -226,19 +234,19 @@ export default function ProductImagesPage() {
         </CardHeader>
         <CardContent>
           <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:col-span-6 gap-4 items-end">
               <div className="lg:col-span-2 xl:col-span-1">
                 <label htmlFor="classification-filter" className="block text-sm font-medium text-muted-foreground mb-1">Item Classification <span className="text-destructive">*</span></label>
                 <Select 
                   value={selectedClassification} 
                   onValueChange={setSelectedClassification}
-                  disabled={isLoadingInitial || distinctClassifications.length <= 1}
+                  disabled={isLoadingInitial && distinctClassifications.length <= 1} // Disable if still loading initial or only 'all'
                 >
                   <SelectTrigger id="classification-filter" className="h-10">
                     <SelectValue placeholder="Select Classification" />
                   </SelectTrigger>
                   <SelectContent>
-                    {isLoadingInitial ? <SelectItem value="loading" disabled>Loading classifications...</SelectItem> :
+                    {isLoadingInitial && distinctClassifications.length <= 1 ? <SelectItem value="loading" disabled>Loading classifications...</SelectItem> :
                       distinctClassifications.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Classifications' : cat}</SelectItem>
                     ))}
@@ -324,23 +332,30 @@ export default function ProductImagesPage() {
               </div>
           )}
 
-          {!isLoading && !selectedClassification && (
+          {!isLoading && !selectedClassification && initialProductsLoad.length > 0 && (
+            <div className="flex flex-col items-center justify-center h-40 text-center">
+              <ListFilter className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Please select an ITEM CLASSIFICATION to view specific products, or 'All Classifications' is currently active.</p>
+            </div>
+          )}
+           {!isLoading && !selectedClassification && initialProductsLoad.length === 0 && (
             <div className="flex flex-col items-center justify-center h-40 text-center">
               <ListFilter className="h-10 w-10 text-muted-foreground mb-3" />
               <p className="text-muted-foreground">Please select an ITEM CLASSIFICATION to view products.</p>
             </div>
           )}
 
+
           {!isLoading && selectedClassification && clientFilteredProducts.length === 0 && displayedProducts.length > 0 && !error && (
                <div className="flex flex-col items-center justify-center h-40 text-center">
                   <Search className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No products match your current filters for '{selectedClassification}'.</p>
+                  <p className="text-muted-foreground">No products match your current filters for '{selectedClassification === 'all' ? 'All Classifications' : selectedClassification}'.</p>
               </div>
           )}
            {!isLoading && selectedClassification && displayedProducts.length === 0 && !error && (
                <div className="flex flex-col items-center justify-center h-40 text-center">
                   <AlertTriangle className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No products found for classification '{selectedClassification}'.</p>
+                  <p className="text-muted-foreground">No products found for classification '{selectedClassification === 'all' ? 'All Classifications' : selectedClassification}'.</p>
               </div>
           )}
 
@@ -399,7 +414,7 @@ export default function ProductImagesPage() {
                 </Table>
               </div>
               <p className="text-xs text-muted-foreground mt-4">
-                Showing {clientFilteredProducts.length} of {displayedProducts.length} products for '{selectedClassification}'.
+                Showing {clientFilteredProducts.length} of {displayedProducts.length} products for '{selectedClassification === 'all' ? "All Classifications" : selectedClassification}'.
                 {initialProductsLoad.length > 0 && selectedClassification === 'all' && ` (Total ${initialProductsLoad.length} products in system)`}
               </p>
             </>
@@ -420,4 +435,3 @@ export default function ProductImagesPage() {
     </>
   );
 }
-

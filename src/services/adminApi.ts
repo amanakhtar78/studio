@@ -1,4 +1,3 @@
-
 'use client';
 import axios from 'axios';
 import type { AdminLoginResponse, AdminProduct, UploadImageApiResponse, UpdateProductImagePathPayload, UpdateProductImagePathResponse } from '@/types';
@@ -29,7 +28,8 @@ export const fetchGlobalViewDataAPI = async (
   if (classification && classification !== 'all') {
     url += `&ITEM CLASSIFICATION=${encodeURIComponent(classification)}`;
   }
-  return axios.get<{ data: AdminProduct[] }>(url, { // Adjusting to expect { data: AdminProduct[] } based on previous usage
+  // Expect the API to return AdminProduct[] directly in response.data
+  return axios.get<AdminProduct[]>(url, { 
     headers: {
       'session-token': token,
       'Content-Type': 'application/json',
@@ -66,4 +66,3 @@ export const updateProductImagePathAPI = async (
 
 
 export default adminApiClient;
-
