@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const COLUMNS_TO_DISPLAY: (keyof AdminProduct)[] = ["ITEM CODE", "ITEM NAME", "ITEM DESCRIPTION", "ITEM CATEGORY", "ITEM SUB CATEGORY", "IMAGEPATH"];
 
 export default function ProductImagesPage() {
-  const adminToken = useSelector((state: RootState) => state.adminAuth.adminToken);
+  const sClientSecret = useSelector((state: RootState) => state.adminAuth.sClientSecret);
   
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true); // Initial loading state is true
@@ -32,9 +32,9 @@ export default function ProductImagesPage() {
     let isMountedGuard = true;
 
     const fetchData = async () => {
-      if (!adminToken) {
+      if (!sClientSecret) {
         if (isMountedGuard) {
-          setError('Authentication token not found. Please log in again.');
+          setError('Authentication secret not found. Please log in again.');
           setProducts([]);
           setIsLoading(false);
         }
@@ -47,7 +47,7 @@ export default function ProductImagesPage() {
       }
       
       try {
-        const response = await fetchGlobalViewDataAPI('792', adminToken);
+        const response = await fetchGlobalViewDataAPI('792', sClientSecret);
         if (isMountedGuard) {
           if (Array.isArray(response.data)) {
             setProducts(response.data);
@@ -75,7 +75,7 @@ export default function ProductImagesPage() {
     return () => {
       isMountedGuard = false; // Cleanup function to prevent state updates if component unmounts
     };
-  }, [adminToken]);
+  }, [sClientSecret]);
 
   const distinctCategories = useMemo(() => {
     return ['all', ...new Set(products.map(p => p["ITEM CATEGORY"] || 'N/A').filter(cat => cat !== 'N/A'))];
@@ -276,3 +276,4 @@ export default function ProductImagesPage() {
     </Card>
   );
 }
+
