@@ -11,7 +11,7 @@ import { SearchProvider } from '@/context/search-context';
 import { AuthProvider } from '@/context/auth-context';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { StoreProvider } from '@/components/store-provider';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
 const geistSans = Geist({
@@ -53,6 +53,10 @@ export default function RootLayout({
       localStorage.setItem('theme', theme);
     }
   }, [theme, isMounted]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  }, []);
 
   if (!isMounted) {
     // To prevent hydration mismatch, render a basic page with a loader until theme and client-side logic are ready
