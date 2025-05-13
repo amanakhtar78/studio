@@ -15,7 +15,7 @@ const initialState: AdminAuthState = {
 
 interface AdminLoginCredentials {
   email: string;
-  password?: string; // Optional based on API structure if password is not always required for "ECOMMERCE" module
+  password?: string; 
 }
 
 export const loginAdmin = createAsyncThunk<AdminLoginResponse, AdminLoginCredentials, { rejectValue: string }>(
@@ -24,7 +24,7 @@ export const loginAdmin = createAsyncThunk<AdminLoginResponse, AdminLoginCredent
     try {
       const response = await adminLoginAPI({
         MODULENAME: "ECOMMERCE",
-        email0: credentials.email, // API uses email0
+        email: credentials.email, // Changed from email0 to email
         password: credentials.password,
       });
       if (response.data && response.data.authenticationToken) {
@@ -109,3 +109,4 @@ const adminAuthSlice = createSlice({
 
 export const { logoutAdmin, loadAdminFromSession } = adminAuthSlice.actions;
 export default adminAuthSlice.reducer;
+

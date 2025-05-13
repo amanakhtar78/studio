@@ -12,8 +12,8 @@ const adminApiClient = axios.create({
 
 interface AdminLoginPayload {
   MODULENAME: "ECOMMERCE";
-  email0: string; // API expects email0
-  password?: string; // API expects password, can be optional if not always sent
+  email: string; // Changed from email0 to email
+  password?: string; 
 }
 
 
@@ -21,3 +21,4 @@ export const adminLoginAPI = (payload: AdminLoginPayload) =>
   adminApiClient.post<AdminLoginResponse>('/login', payload);
 
 export default adminApiClient;
+
