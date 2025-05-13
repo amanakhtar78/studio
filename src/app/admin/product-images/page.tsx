@@ -20,7 +20,7 @@ export default function ProductImagesPage() {
   const adminToken = useSelector((state: RootState) => state.adminAuth.adminToken);
   
   const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Initial loading state is true
   const [error, setError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,29 +29,56 @@ export default function ProductImagesPage() {
   const [imageStatusFilter, setImageStatusFilter] = useState<ImageFilterStatus>('all');
 
   useEffect(() => {
+    let isMountedGuard = true;
+
     const fetchData = async () => {
       if (!adminToken) {
-        setError('Authentication token not found. Please log in again.');
-        setIsLoading(false);
+        if (isMountedGuard) {
+          setError('Authentication token not found. Please log in again.');
+          setProducts([]);
+          setIsLoading(false);
+        }
         return;
       }
-      setIsLoading(true);
+
+      if (isMountedGuard) {
+        setIsLoading(true); // Set loading to true before starting the fetch
+        setError(null); // Clear previous errors
+      }
+      
       try {
         const response = await fetchGlobalViewDataAPI('792', adminToken);
-        setProducts(response.data || []);
-        setError(null);
+        if (isMountedGuard) {
+          if (Array.isArray(response.data)) {
+            setProducts(response.data);
+          } else {
+            setProducts([]);
+            setError('Received invalid product data from server.');
+            console.warn("API response for products was not an array:", response.data);
+          }
+        }
       } catch (err: any) {
-        console.error("Error fetching product data:", err);
-        setError(err.response?.data?.message || err.message || 'Failed to fetch product data.');
+        if (isMountedGuard) {
+          console.error("Error fetching product data:", err);
+          setError(err.response?.data?.message || err.message || 'Failed to fetch product data.');
+          setProducts([]); // Clear products on error
+        }
       } finally {
-        setIsLoading(false);
+        if (isMountedGuard) {
+          setIsLoading(false);
+        }
       }
     };
+
     fetchData();
+
+    return () => {
+      isMountedGuard = false; // Cleanup function to prevent state updates if component unmounts
+    };
   }, [adminToken]);
 
   const distinctCategories = useMemo(() => {
-    return ['all', ...new Set(products.map(p => p["ITEM CATEGORY"] || 'N/A'))];
+    return ['all', ...new Set(products.map(p => p["ITEM CATEGORY"] || 'N/A').filter(cat => cat !== 'N/A'))];
   }, [products]);
 
   const distinctSubCategories = useMemo(() => {
@@ -63,11 +90,11 @@ export default function ProductImagesPage() {
             .filter(p => p["ITEM CATEGORY"] === categoryFilter)
             .map(p => p["ITEM SUB CATEGORY"] || 'N/A');
     }
-    return ['all', ...new Set(relevantSubCategories)];
+    return ['all', ...new Set(relevantSubCategories.filter(subcat => subcat !== 'N/A'))];
   }, [products, categoryFilter]);
   
   useEffect(() => {
-    setSubCategoryFilter('all'); // Reset subcategory filter when category changes
+    setSubCategoryFilter('all'); 
   }, [categoryFilter]);
 
 
@@ -156,7 +183,7 @@ export default function ProductImagesPage() {
             </div>
             <div>
               <label htmlFor="subcategory-filter" className="block text-sm font-medium text-muted-foreground mb-1">Sub-Category</label>
-              <Select value={subCategoryFilter} onValueChange={setSubCategoryFilter} disabled={categoryFilter === 'all' && distinctSubCategories.length <=1}>
+              <Select value={subCategoryFilter} onValueChange={setSubCategoryFilter} disabled={(categoryFilter === 'all' && distinctSubCategories.length <=1) || distinctSubCategories.length <= 1}>
                 <SelectTrigger id="subcategory-filter" className="h-10">
                   <SelectValue placeholder="Filter by sub-category" />
                 </SelectTrigger>
@@ -180,8 +207,7 @@ export default function ProductImagesPage() {
                 </SelectContent>
               </Select>
             </div>
-             {/* Clear Filters Button - aligned with other inputs using an invisible div or manual spacing if needed */}
-             <div className="lg:col-start-5"> {/* This places it in the 5th column spot */}
+             <div className="lg:col-start-5">
                 <Button onClick={handleClearFilters} variant="outline" className="w-full h-10">
                     <Trash2 className="mr-2 h-4 w-4" /> Clear Filters
                 </Button>
@@ -212,7 +238,8 @@ export default function ProductImagesPage() {
                                 src={product["IMAGEPATH"]} 
                                 alt={product["ITEM NAME"]} 
                                 layout="fill" 
-                                objectFit="contain" 
+                                objectFit="contain"
+                                data-ai-hint="product image"
                               />
                             </div>
                           ) : (
@@ -240,7 +267,7 @@ export default function ProductImagesPage() {
             </TableBody>
           </Table>
         </div>
-         {filteredProducts.length > 0 && (
+         {products.length > 0 && ( // Show total count based on all products, not just filtered ones
           <p className="text-xs text-muted-foreground mt-4">
             Showing {filteredProducts.length} of {products.length} products.
           </p>
