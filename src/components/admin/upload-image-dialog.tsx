@@ -101,7 +101,6 @@ export function UploadImageDialog({
 
     try {
       // Step 1: Upload image to get URL
-      // uploadImageAPI now directly returns the URL string or throws an error
       const imagePath = await uploadImageAPI(selectedFile);
 
       if (!imagePath || typeof imagePath !== 'string') {
@@ -112,49 +111,42 @@ export function UploadImageDialog({
       const updatePayload: UpdateProductImagePathPayload = {
         ITEMCODE: itemCode,
         IMAGEPATH: imagePath,
-        SUCCESS_STATUS: '', // API expects these, typically empty from client
-        ERROR_STATUS: '',   // API expects these, typically empty from client
+        SUCCESS_STATUS: '', 
+        ERROR_STATUS: '',   
       };
       
       const updateResponse = await updateProductImagePathAPI(updatePayload, sClientSecret);
 
-      // Check for SUCCESS_STATUS in the response from the SP handler
-      // The exact structure of updateResponse needs to be confirmed. Common patterns:
-      // 1. updateResponse.SUCCESS_STATUS directly
-      // 2. updateResponse.data.SUCCESS_STATUS if data is an object
-      // Assuming updateResponse directly contains SUCCESS_STATUS/ERROR_STATUS as per UpdateProductImagePathResponse type
-      if (updateResponse && (updateResponse.SUCCESS_STATUS && updateResponse.SUCCESS_STATUS.toLowerCase().includes('success'))) {
+      // Check if the response indicates success (e.g., message includes "Document Saved")
+      // The API returns HTTP 201 with { "message": "Document Saved" } on success
+      if (updateResponse && updateResponse.message && updateResponse.message.toLowerCase().includes('document saved')) {
         toast({
           title: 'Upload Successful',
-          description: `Image for ${itemName} (Code: ${itemCode}) updated. New path: ${imagePath}`,
+          description: `Image for ${itemName} (Code: ${itemCode}) updated.`,
         });
         onUploadSuccess(itemCode, imagePath);
         handleDialogClose(false); // Close dialog on success
       } else {
-        // If no explicit SUCCESS_STATUS or if ERROR_STATUS is present
-        throw new Error(updateResponse?.ERROR_STATUS || 'Failed to update product image path in the database.');
+        // This case handles 2xx responses that aren't the expected success message
+        const errorMessage = updateResponse?.message || 'Failed to update product image path. Unexpected response from server.';
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
-      // Try to get a more specific error message
-      let errorMessage = 'An unknown error occurred during upload.';
-      if (error.response && error.response.data) {
-        // If the error response is an object with a message field
-        if (typeof error.response.data.message === 'string') {
-          errorMessage = error.response.data.message;
-        } else if (typeof error.response.data.ERROR_STATUS === 'string' && error.response.data.ERROR_STATUS.trim() !== '') {
-             errorMessage = error.response.data.ERROR_STATUS;
-        } else if (typeof error.response.data === 'string') { // If error.response.data is a string
-          errorMessage = error.response.data;
-        }
+      console.error('Upload error details:', error);
+      let displayErrorMessage = 'An unknown error occurred during the update phase.';
+
+      if (error.response && error.response.data && error.response.data.message) {
+        // Error from Axios (e.g., 4xx, 5xx from the SP handler API)
+        displayErrorMessage = error.response.data.message;
       } else if (error.message) {
-        errorMessage = error.message;
+        // Error thrown manually (e.g., from the 'else' block above) or other JS errors
+        displayErrorMessage = error.message;
       }
       
-      setUploadError(errorMessage);
+      setUploadError(displayErrorMessage);
       toast({
-        title: 'Upload Failed',
-        description: errorMessage,
+        title: 'Update Failed',
+        description: displayErrorMessage,
         variant: 'destructive',
       });
     } finally {

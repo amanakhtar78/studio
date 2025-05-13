@@ -184,15 +184,9 @@ export interface UpdateProductImagePathPayload {
 }
 
 export interface UpdateProductImagePathResponse {
-  // Define structure based on actual API response for SP 912
-  // Example:
-  // { "SUCCESS_STATUS": "Image path updated successfully.", "ERROR_STATUS": "" }
-  // { "SUCCESS_STATUS": "", "ERROR_STATUS": "Failed to update image path." }
-  // For now, using a generic approach
-  data: any; // Adjust based on the actual response data structure
-  message?: string; // If there's a general message
-  SUCCESS_STATUS?: string;
-  ERROR_STATUS?: string;
+  message: string; // e.g., "Document Saved" or an error message from SP
+  // The API might return other fields, but based on current info, 'message' is primary.
 }
 // --- END ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
+
 
