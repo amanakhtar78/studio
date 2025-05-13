@@ -20,8 +20,16 @@ interface AdminLoginPayload {
 export const adminLoginAPI = (payload: AdminLoginPayload) => 
   adminApiClient.post<AdminLoginResponse>('/login', payload);
 
-export const fetchGlobalViewDataAPI = async (viewname: string, token: string) => {
-  return axios.get<AdminProduct[]>(`https://devapi.tech23.net/global/globalViewHandler?viewname=${viewname}`, {
+export const fetchGlobalViewDataAPI = async (
+  viewname: string, 
+  token: string,
+  classification?: string
+) => {
+  let url = `https://devapi.tech23.net/global/globalViewHandler?viewname=${viewname}`;
+  if (classification && classification !== 'all') {
+    url += `&ITEM CLASSIFICATION=${encodeURIComponent(classification)}`;
+  }
+  return axios.get<AdminProduct[]>(url, {
     headers: {
       'session-token': token,
       'Content-Type': 'application/json',

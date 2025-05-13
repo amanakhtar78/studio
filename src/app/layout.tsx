@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Metadata } from 'next';
@@ -13,6 +14,7 @@ import { AuthModal } from '@/components/auth/auth-modal';
 import { StoreProvider } from '@/components/store-provider';
 import { useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -31,6 +33,8 @@ export default function RootLayout({
 }>) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin');
 
   useEffect(() => {
     setIsMounted(true);
@@ -92,13 +96,13 @@ export default function RootLayout({
           <AuthProvider>
             <SearchProvider>
               <CartProvider>
-                <Navbar theme={theme} toggleTheme={toggleTheme} />
+                {!isAdminRoute && <Navbar theme={theme} toggleTheme={toggleTheme} />}
                 <main className="flex-grow">
                   {children}
                 </main>
-                <Footer />
+                {!isAdminRoute && <Footer />}
                 <Toaster />
-                <AuthModal />
+                {!isAdminRoute && <AuthModal />}
               </CartProvider>
             </SearchProvider>
           </AuthProvider>
