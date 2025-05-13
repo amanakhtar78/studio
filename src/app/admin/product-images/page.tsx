@@ -11,29 +11,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
-import { Loader2, AlertTriangle, Search, Filter, UploadCloud, Trash2, ListFilter } from 'lucide-react';
+import { Loader2, AlertTriangle, Search, ListFilter, UploadCloud, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { UploadImageDialog } from '@/components/admin/upload-image-dialog'; // Import the dialog
+import { useToast } from '@/hooks/use-toast';
 
 const COLUMNS_TO_DISPLAY: (keyof AdminProduct)[] = ["ITEM CODE", "ITEM NAME", "ITEM DESCRIPTION", "ITEM CATEGORY", "ITEM SUB CATEGORY", "ITEM CLASSIFICATION", "IMAGEPATH"];
 
 export default function ProductImagesPage() {
   const sClientSecret = useSelector((state: RootState) => state.adminAuth.sClientSecret);
+  const { toast } = useToast();
   
-  const [initialProductsLoad, setInitialProductsLoad] = useState<AdminProduct[]>([]); // For populating filters initially
+  const [initialProductsLoad, setInitialProductsLoad] = useState<AdminProduct[]>([]);
   const [displayedProducts, setDisplayedProducts] = useState<AdminProduct[]>([]);
   
-  const [isLoadingInitial, setIsLoadingInitial] = useState(true); // For initial full load
-  const [isLoadingFiltered, setIsLoadingFiltered] = useState(false); // For classification-based load
+  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+  const [isLoadingFiltered, setIsLoadingFiltered] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedClassification, setSelectedClassification] = useState<string>(''); // Empty means none selected
-
+  const [selectedClassification, setSelectedClassification] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [subCategoryFilter, setSubCategoryFilter] = useState<string>('all');
   const [imageStatusFilter, setImageStatusFilter] = useState<ImageFilterStatus>('all');
 
-  // Fetch all products once to populate filter dropdowns
+  // State for upload dialog
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [selectedProductForUpload, setSelectedProductForUpload] = useState<AdminProduct | null>(null);
+
+
   useEffect(() => {
     let isMountedGuard = true;
     const fetchInitialData = async () => {
@@ -47,13 +53,19 @@ export default function ProductImagesPage() {
         setError(null);
       }
       try {
-        const response = await fetchGlobalViewDataAPI('792', sClientSecret); // No classification filter here
+        // Initially fetch only distinct classifications to populate the first dropdown
+        // Or fetch all for "all" option if that's the initial state.
+        // For now, let's assume it fetches classifications first if possible, or a small subset of products.
+        // If the API only gives all products, we must fetch all.
+        const response = await fetchGlobalViewDataAPI('792', sClientSecret); 
         if (isMountedGuard) {
-          if (Array.isArray(response.data)) {
-            setInitialProductsLoad(response.data);
+          if (response.data && Array.isArray(response.data.data)) { // API wraps data in a 'data' property
+            setInitialProductsLoad(response.data.data);
+            // if no classification selected initially, don't set displayedProducts yet
+            // if a default classification should be active, filter and setDisplayedProducts here
           } else {
             setInitialProductsLoad([]);
-            setError('Received invalid initial product data.');
+            setError('Received invalid initial product data format.');
           }
         }
       } catch (err: any) {
@@ -69,18 +81,19 @@ export default function ProductImagesPage() {
     return () => { isMountedGuard = false; };
   }, [sClientSecret]);
 
-  // Fetch products based on selected classification
+
   useEffect(() => {
     let isMountedGuard = true;
     const fetchProductsByClassification = async () => {
-      if (!sClientSecret || !selectedClassification || selectedClassification === 'all') {
-        if(selectedClassification === 'all' && initialProductsLoad.length > 0) {
-            if(isMountedGuard) setDisplayedProducts(initialProductsLoad); // Show all if 'all' is chosen and initial load is done
-        } else {
-            if(isMountedGuard) setDisplayedProducts([]); // Clear if no classification or 'all' without initial data
-        }
+      if (!sClientSecret || !selectedClassification) {
+         if (isMountedGuard) setDisplayedProducts([]); 
         return;
       }
+      if (selectedClassification === 'all') {
+        if (isMountedGuard) setDisplayedProducts(initialProductsLoad);
+        return;
+      }
+
       if(isMountedGuard) {
         setIsLoadingFiltered(true);
         setError(null);
@@ -88,11 +101,11 @@ export default function ProductImagesPage() {
       try {
         const response = await fetchGlobalViewDataAPI('792', sClientSecret, selectedClassification);
         if (isMountedGuard) {
-          if (Array.isArray(response.data)) {
-            setDisplayedProducts(response.data);
+          if (response.data && Array.isArray(response.data.data)) {
+            setDisplayedProducts(response.data.data);
           } else {
             setDisplayedProducts([]);
-            setError('Received invalid product data for classification.');
+            setError('Received invalid product data format for classification.');
           }
         }
       } catch (err: any) {
@@ -105,26 +118,30 @@ export default function ProductImagesPage() {
       }
     };
 
-    if (selectedClassification) { // Only fetch if a classification is selected
+    if (selectedClassification) {
         fetchProductsByClassification();
     } else {
-        if(isMountedGuard) setDisplayedProducts([]); // Clear products if no classification selected
+        // If no classification is selected and initialProductsLoad is populated, 
+        // this implies we might want to show all products or a message.
+        // For now, clearing displayed products if no specific classification is chosen
+        // (unless 'all' is handled above).
+        if (isMountedGuard && selectedClassification !== 'all') setDisplayedProducts([]);
     }
     return () => { isMountedGuard = false; };
   }, [selectedClassification, sClientSecret, initialProductsLoad]);
 
 
   const distinctClassifications = useMemo(() => {
-    return ['all', ...new Set(initialProductsLoad.map(p => p["ITEM CLASSIFICATION"] || 'N/A').filter(Boolean))];
+    return ['all', ...new Set(initialProductsLoad.map(p => p["ITEM CLASSIFICATION"] || 'N/A').filter(Boolean).sort())];
   }, [initialProductsLoad]);
 
   const distinctCategories = useMemo(() => {
-    const source = selectedClassification && selectedClassification !== 'all' && displayedProducts.length > 0 ? displayedProducts : initialProductsLoad;
-    return ['all', ...new Set(source.map(p => p["ITEM CATEGORY"] || 'N/A').filter(Boolean))];
-  }, [initialProductsLoad, displayedProducts, selectedClassification]);
+    const source = displayedProducts.length > 0 ? displayedProducts : initialProductsLoad;
+    return ['all', ...new Set(source.map(p => p["ITEM CATEGORY"] || 'N/A').filter(Boolean).sort())];
+  }, [initialProductsLoad, displayedProducts]);
 
   const distinctSubCategories = useMemo(() => {
-    const source = selectedClassification && selectedClassification !== 'all' && displayedProducts.length > 0 ? displayedProducts : initialProductsLoad;
+    const source = displayedProducts.length > 0 ? displayedProducts : initialProductsLoad;
     let relevantSubCategories: string[];
     if (categoryFilter === 'all') {
         relevantSubCategories = source.map(p => p["ITEM SUB CATEGORY"] || 'N/A');
@@ -133,8 +150,8 @@ export default function ProductImagesPage() {
             .filter(p => p["ITEM CATEGORY"] === categoryFilter)
             .map(p => p["ITEM SUB CATEGORY"] || 'N/A');
     }
-    return ['all', ...new Set(relevantSubCategories.filter(Boolean))];
-  }, [initialProductsLoad, displayedProducts, selectedClassification, categoryFilter]);
+    return ['all', ...new Set(relevantSubCategories.filter(Boolean).sort())];
+  }, [initialProductsLoad, displayedProducts, categoryFilter]);
   
   useEffect(() => {
     setSubCategoryFilter('all'); 
@@ -142,7 +159,6 @@ export default function ProductImagesPage() {
 
 
   const clientFilteredProducts = useMemo(() => {
-    // These filters operate on `displayedProducts` which are already server-filtered by classification (or all if 'all' classification)
     return displayedProducts.filter(product => {
       const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.trim() !== '');
       const matchesSearch = searchTerms.length === 0 || searchTerms.every(term => 
@@ -153,7 +169,7 @@ export default function ProductImagesPage() {
       const matchesCategory = categoryFilter === 'all' || product["ITEM CATEGORY"] === categoryFilter;
       const matchesSubCategory = subCategoryFilter === 'all' || product["ITEM SUB CATEGORY"] === subCategoryFilter;
       
-      const hasImage = product["IMAGEPATH"] && product["IMAGEPATH"].trim() !== '';
+      const hasImage = product["IMAGEPATH"] && product["IMAGEPATH"].trim() !== '' && product["IMAGEPATH"].toLowerCase() !== 'null';
       const matchesImageStatus = 
         imageStatusFilter === 'all' ||
         (imageStatusFilter === 'uploaded' && hasImage) ||
@@ -165,15 +181,33 @@ export default function ProductImagesPage() {
 
   const handleClearFilters = () => {
     setSearchQuery('');
-    // setSelectedClassification(''); // Keep classification, or clear it? For now, keep.
     setCategoryFilter('all');
     setSubCategoryFilter('all');
     setImageStatusFilter('all');
   };
+
+  const handleOpenUploadDialog = (product: AdminProduct) => {
+    setSelectedProductForUpload(product);
+    setIsUploadDialogOpen(true);
+  };
+
+  const handleUploadSuccess = (itemCode: string, newImagePath: string) => {
+    const updateProductList = (list: AdminProduct[]) => 
+      list.map(p => p["ITEM CODE"] === itemCode ? { ...p, "IMAGEPATH": newImagePath } : p);
+
+    setDisplayedProducts(prev => updateProductList(prev));
+    if (selectedClassification === 'all') { // Also update initialProductsLoad if "All Classifications" is active
+        setInitialProductsLoad(prev => updateProductList(prev));
+    }
+    
+    setIsUploadDialogOpen(false);
+    setSelectedProductForUpload(null);
+    // Toast is handled within the dialog
+  };
   
   const isLoading = isLoadingInitial || isLoadingFiltered;
 
-  if (isLoadingInitial && !sClientSecret) { // Show specific message if not authenticated
+  if (isLoadingInitial && !sClientSecret) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
@@ -183,187 +217,207 @@ export default function ProductImagesPage() {
     );
   }
 
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">Product Image Management</CardTitle>
-        <CardDescription>Select an item classification to load products. Then, manage images and details.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-6 p-4 border rounded-lg bg-muted/30">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
-            <div className="lg:col-span-2 xl:col-span-1">
-              <label htmlFor="classification-filter" className="block text-sm font-medium text-muted-foreground mb-1">Item Classification <span className="text-destructive">*</span></label>
-              <Select 
-                value={selectedClassification} 
-                onValueChange={setSelectedClassification}
-                disabled={isLoadingInitial || distinctClassifications.length <= 1}
-              >
-                <SelectTrigger id="classification-filter" className="h-10">
-                  <SelectValue placeholder="Select Classification" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingInitial ? <SelectItem value="loading" disabled>Loading classifications...</SelectItem> :
-                    distinctClassifications.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Classifications' : cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Product Image Management</CardTitle>
+          <CardDescription>Select an item classification to load products. Then, manage images and details.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+              <div className="lg:col-span-2 xl:col-span-1">
+                <label htmlFor="classification-filter" className="block text-sm font-medium text-muted-foreground mb-1">Item Classification <span className="text-destructive">*</span></label>
+                <Select 
+                  value={selectedClassification} 
+                  onValueChange={setSelectedClassification}
+                  disabled={isLoadingInitial || distinctClassifications.length <= 1}
+                >
+                  <SelectTrigger id="classification-filter" className="h-10">
+                    <SelectValue placeholder="Select Classification" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingInitial ? <SelectItem value="loading" disabled>Loading classifications...</SelectItem> :
+                      distinctClassifications.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Classifications' : cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="lg:col-span-2 xl:col-span-2">
-              <label htmlFor="search-products" className="block text-sm font-medium text-muted-foreground mb-1">Search Products</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search-products"
-                  placeholder="Search loaded products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 h-10"
-                  disabled={!selectedClassification || isLoadingFiltered || displayedProducts.length === 0}
-                />
+              <div className="lg:col-span-2 xl:col-span-2">
+                <label htmlFor="search-products" className="block text-sm font-medium text-muted-foreground mb-1">Search Products</label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search-products"
+                    placeholder="Search loaded products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 h-10"
+                    disabled={!selectedClassification || isLoadingFiltered || displayedProducts.length === 0}
+                  />
+                </div>
+              </div>
+              
+              <div className="xl:col-span-1">
+                <label htmlFor="category-filter" className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter} disabled={!selectedClassification || isLoadingFiltered || distinctCategories.length <=1 || displayedProducts.length === 0}>
+                  <SelectTrigger id="category-filter" className="h-10">
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {distinctCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="xl:col-span-1">
+                <label htmlFor="subcategory-filter" className="block text-sm font-medium text-muted-foreground mb-1">Sub-Category</label>
+                <Select value={subCategoryFilter} onValueChange={setSubCategoryFilter} disabled={!selectedClassification || isLoadingFiltered || distinctSubCategories.length <=1 || displayedProducts.length === 0}>
+                  <SelectTrigger id="subcategory-filter" className="h-10">
+                    <SelectValue placeholder="Filter by sub-category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {distinctSubCategories.map(subcat => (
+                      <SelectItem key={subcat} value={subcat}>{subcat === 'all' ? 'All Sub-Categories' : subcat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="xl:col-span-1">
+                <label htmlFor="image-status-filter" className="block text-sm font-medium text-muted-foreground mb-1">Image Status</label>
+                <Select value={imageStatusFilter} onValueChange={setImageStatusFilter as (value: string) => void} disabled={!selectedClassification || isLoadingFiltered || displayedProducts.length === 0}>
+                  <SelectTrigger id="image-status-filter" className="h-10">
+                    <SelectValue placeholder="Filter by image status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="uploaded">Uploaded</SelectItem>
+                    <SelectItem value="not-uploaded">Not Uploaded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+               <div className="xl:col-span-1">
+                  <Button onClick={handleClearFilters} variant="outline" className="w-full h-10 mt-5" disabled={!selectedClassification || isLoadingFiltered || displayedProducts.length === 0}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Clear
+                  </Button>
               </div>
             </div>
-            
-            <div className="xl:col-span-1">
-              <label htmlFor="category-filter" className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter} disabled={!selectedClassification || isLoadingFiltered || distinctCategories.length <=1 || displayedProducts.length === 0}>
-                <SelectTrigger id="category-filter" className="h-10">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {distinctCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="xl:col-span-1">
-              <label htmlFor="subcategory-filter" className="block text-sm font-medium text-muted-foreground mb-1">Sub-Category</label>
-              <Select value={subCategoryFilter} onValueChange={setSubCategoryFilter} disabled={!selectedClassification || isLoadingFiltered || distinctSubCategories.length <=1 || displayedProducts.length === 0}>
-                <SelectTrigger id="subcategory-filter" className="h-10">
-                  <SelectValue placeholder="Filter by sub-category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {distinctSubCategories.map(subcat => (
-                    <SelectItem key={subcat} value={subcat}>{subcat === 'all' ? 'All Sub-Categories' : subcat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="xl:col-span-1">
-              <label htmlFor="image-status-filter" className="block text-sm font-medium text-muted-foreground mb-1">Image Status</label>
-              <Select value={imageStatusFilter} onValueChange={setImageStatusFilter as (value: string) => void} disabled={!selectedClassification || isLoadingFiltered || displayedProducts.length === 0}>
-                <SelectTrigger id="image-status-filter" className="h-10">
-                  <SelectValue placeholder="Filter by image status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="uploaded">Uploaded</SelectItem>
-                  <SelectItem value="not-uploaded">Not Uploaded</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-             <div className="xl:col-span-1">
-                <Button onClick={handleClearFilters} variant="outline" className="w-full h-10" disabled={!selectedClassification || isLoadingFiltered || displayedProducts.length === 0}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Clear Filters
-                </Button>
-            </div>
           </div>
-        </div>
 
-        {error && (
-            <div className="my-4 p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-md text-center">
-                <AlertTriangle className="inline-block mr-2 h-5 w-5" /> {error}
+          {error && (
+              <div className="my-4 p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-md text-center">
+                  <AlertTriangle className="inline-block mr-2 h-5 w-5" /> {error}
+              </div>
+          )}
+
+          {isLoading && (
+               <div className="flex items-center justify-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="ml-3 text-muted-foreground">Loading products...</p>
+              </div>
+          )}
+
+          {!isLoading && !selectedClassification && (
+            <div className="flex flex-col items-center justify-center h-40 text-center">
+              <ListFilter className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Please select an ITEM CLASSIFICATION to view products.</p>
             </div>
-        )}
+          )}
 
-        {isLoading && (
-             <div className="flex items-center justify-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-3 text-muted-foreground">Loading products...</p>
-            </div>
-        )}
+          {!isLoading && selectedClassification && clientFilteredProducts.length === 0 && displayedProducts.length > 0 && !error && (
+               <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <Search className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">No products match your current filters for '{selectedClassification}'.</p>
+              </div>
+          )}
+           {!isLoading && selectedClassification && displayedProducts.length === 0 && !error && (
+               <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <AlertTriangle className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">No products found for classification '{selectedClassification}'.</p>
+              </div>
+          )}
 
-        {!isLoading && !selectedClassification && (
-          <div className="flex flex-col items-center justify-center h-40 text-center">
-            <ListFilter className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Please select an ITEM CLASSIFICATION to view products.</p>
-          </div>
-        )}
-
-        {!isLoading && selectedClassification && clientFilteredProducts.length === 0 && displayedProducts.length > 0 && (
-             <div className="flex flex-col items-center justify-center h-40 text-center">
-                <Search className="h-10 w-10 text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">No products match your current filters for '{selectedClassification}'.</p>
-            </div>
-        )}
-         {!isLoading && selectedClassification && displayedProducts.length === 0 && !error && (
-             <div className="flex flex-col items-center justify-center h-40 text-center">
-                <AlertTriangle className="h-10 w-10 text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">No products found for classification '{selectedClassification}'.</p>
-            </div>
-        )}
-
-
-        {!isLoading && selectedClassification && clientFilteredProducts.length > 0 && (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {COLUMNS_TO_DISPLAY.map(colName => (
-                      <TableHead key={colName} className="whitespace-nowrap">{colName.replace("ITEM ", "")}</TableHead>
-                    ))}
-                    <TableHead className="text-center">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientFilteredProducts.map((product) => (
-                    <TableRow key={product["ITEM CODE"]}>
+          {!isLoading && selectedClassification && clientFilteredProducts.length > 0 && (
+            <>
+              <div className="overflow-x-auto border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
                       {COLUMNS_TO_DISPLAY.map(colName => (
-                        <TableCell key={colName} className="whitespace-nowrap py-2 text-xs">
-                          {colName === "IMAGEPATH" ? (
-                            product["IMAGEPATH"] ? (
-                              <div className="relative h-12 w-12 rounded overflow-hidden border bg-white">
-                                <Image 
-                                  src={product["IMAGEPATH"]} 
-                                  alt={product["ITEM NAME"]} 
-                                  layout="fill" 
-                                  objectFit="contain"
-                                  data-ai-hint="product image"
-                                />
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground italic">No Image</span>
-                            )
-                          ) : (
-                            product[colName] ?? 'N/A'
-                          )}
-                        </TableCell>
+                        <TableHead key={colName} className="whitespace-nowrap bg-muted/50 text-xs font-semibold">
+                            {colName.replace(/ITEM\s/g, "")}
+                        </TableHead>
                       ))}
-                      <TableCell className="text-center py-2">
-                        <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => alert(`Upload for ${product["ITEM CODE"]}`)}>
-                          <UploadCloud className="mr-1.5 h-3.5 w-3.5" /> Upload
-                        </Button>
-                      </TableCell>
+                      <TableHead className="text-center whitespace-nowrap bg-muted/50 text-xs font-semibold">Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              Showing {clientFilteredProducts.length} of {displayedProducts.length} products for '{selectedClassification}'.
-              {initialProductsLoad.length > 0 && selectedClassification === 'all' && ` (Total ${initialProductsLoad.length} products in system)`}
-            </p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {clientFilteredProducts.map((product) => (
+                      <TableRow key={product["ITEM CODE"]} className="hover:bg-muted/20">
+                        {COLUMNS_TO_DISPLAY.map(colName => (
+                          <TableCell key={colName} className="whitespace-nowrap py-2 text-xs">
+                            {colName === "IMAGEPATH" ? (
+                              product["IMAGEPATH"] && product["IMAGEPATH"].trim() !== '' && product["IMAGEPATH"].toLowerCase() !== 'null' ? (
+                                <div className="relative h-12 w-12 rounded overflow-hidden border bg-white p-0.5">
+                                  <Image 
+                                    src={product["IMAGEPATH"]} 
+                                    alt={product["ITEM NAME"]} 
+                                    layout="fill" 
+                                    objectFit="contain"
+                                    data-ai-hint="product image"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/64/64?grayscale'; (e.target as HTMLImageElement).alt="Error loading image"; }}
+                                  />
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground italic text-[10px]">No Image</span>
+                              )
+                            ) : (
+                              <span title={String(product[colName])} className="block max-w-xs truncate">{product[colName] ?? 'N/A'}</span>
+                            )}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-center py-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs h-8" 
+                            onClick={() => handleOpenUploadDialog(product)}
+                          >
+                            <UploadCloud className="mr-1.5 h-3.5 w-3.5" /> Upload
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Showing {clientFilteredProducts.length} of {displayedProducts.length} products for '{selectedClassification}'.
+                {initialProductsLoad.length > 0 && selectedClassification === 'all' && ` (Total ${initialProductsLoad.length} products in system)`}
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedProductForUpload && sClientSecret && (
+        <UploadImageDialog
+          isOpen={isUploadDialogOpen}
+          onOpenChange={setIsUploadDialogOpen}
+          itemCode={selectedProductForUpload["ITEM CODE"]}
+          itemName={selectedProductForUpload["ITEM NAME"]}
+          sClientSecret={sClientSecret}
+          onUploadSuccess={handleUploadSuccess}
+        />
+      )}
+    </>
   );
 }
+

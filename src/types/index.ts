@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface BannerImage {
@@ -169,4 +170,29 @@ export interface AdminProduct {
 
 export type ImageFilterStatus = "all" | "uploaded" | "not-uploaded";
 
+export interface UploadImageApiResponse {
+  data: string; // Assuming the API returns { data: "image_url_string" }
+  message: string;
+  status: boolean;
+}
+
+export interface UpdateProductImagePathPayload {
+  ITEMCODE: string;
+  IMAGEPATH: string;
+  SUCCESS_STATUS: string; // Typically empty string from frontend
+  ERROR_STATUS: string; // Typically empty string from frontend
+}
+
+export interface UpdateProductImagePathResponse {
+  // Define structure based on actual API response for SP 912
+  // Example:
+  // { "SUCCESS_STATUS": "Image path updated successfully.", "ERROR_STATUS": "" }
+  // { "SUCCESS_STATUS": "", "ERROR_STATUS": "Failed to update image path." }
+  // For now, using a generic approach
+  data: any; // Adjust based on the actual response data structure
+  message?: string; // If there's a general message
+  SUCCESS_STATUS?: string;
+  ERROR_STATUS?: string;
+}
 // --- END ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
+
