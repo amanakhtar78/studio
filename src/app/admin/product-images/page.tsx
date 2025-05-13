@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { UploadImageDialog } from '@/components/admin/upload-image-dialog'; // Import the dialog
 import { useToast } from '@/hooks/use-toast';
 
-const COLUMNS_TO_DISPLAY: (keyof AdminProduct)[] = ["ITEM CODE", "ITEM NAME", "ITEM CATEGORY", "ITEM SUB CATEGORY", "ITEM CLASSIFICATION", "IMAGEPATH"];
+const COLUMNS_TO_DISPLAY: (keyof AdminProduct)[] = ["ITEM CODE", "ITEM NAME", "ITEM CATEGORY", "ITEM SUB CATEGORY", "IMAGEPATH"];
 
 export default function ProductImagesPage() {
   const sClientSecret = useSelector((state: RootState) => state.adminAuth.sClientSecret);
