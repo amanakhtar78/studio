@@ -120,3 +120,27 @@ export interface HighlightItem {
   title: string;
   description: string;
 }
+
+// --- START ADMIN AUTH TYPES ---
+export interface AdminUser {
+  userType: boolean;
+  userCode: string;
+  emailId: string;
+  traineeOrTrainer: string; // Or a more specific type if values are known
+}
+
+export interface AdminLoginResponse {
+  user: AdminUser;
+  authenticationToken: string;
+  sclientSecret: string; // Note: sclientSecret, not clientSecret based on user example
+}
+
+export interface AdminAuthState {
+  adminUser: AdminUser | null;
+  adminToken: string | null;
+  sClientSecret: string | null;
+  isAdminAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+// --- END ADMIN AUTH TYPES ---
