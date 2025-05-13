@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Metadata } from 'next';
@@ -24,14 +23,6 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
 });
-
-// Metadata can't be exported from a 'use client' component.
-// It should be defined in a server component or here if this was a server component.
-// For now, as this is becoming a client component for theme, we'll remove explicit metadata export.
-// export const metadata: Metadata = {
-//   title: 'Zahra Sweet Rolls - Cafe Ordering',
-//   description: 'Order delicious sweet rolls, cakes, cookies, and beverages from Zahra Sweet Rolls.',
-// };
 
 export default function RootLayout({
   children,
@@ -63,21 +54,28 @@ export default function RootLayout({
     }
   }, [theme, isMounted]);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
-  
   if (!isMounted) {
-    // To prevent hydration mismatch, render nothing or a placeholder until theme is determined
+    // To prevent hydration mismatch, render a basic page with a loader until theme and client-side logic are ready
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
-                {/* Optional: Add a loading spinner or skeleton here */}
+            <head>
+              <title>Zahra Sweet Rolls - Loading...</title>
+              <meta name="description" content="Loading delicious treats from Zahra Sweet Rolls." />
+              {/* Minimal critical CSS or font links could go here if necessary */}
+            </head>
+            <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen items-center justify-center bg-background text-foreground`}>
+                <div className="flex flex-col items-center justify-center">
+                    {/* Simple inline SVG loader to avoid dependency on lucide-react before full mount */}
+                    <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="mt-3 text-muted-foreground">Initializing Application...</p>
+                </div>
             </body>
         </html>
     );
   }
-
 
   return (
     <html lang="en" className={theme} style={{ colorScheme: theme }} suppressHydrationWarning>
@@ -96,7 +94,7 @@ export default function RootLayout({
                 </main>
                 <Footer />
                 <Toaster />
-                <AuthModal /> 
+                <AuthModal />
               </CartProvider>
             </SearchProvider>
           </AuthProvider>
@@ -105,4 +103,3 @@ export default function RootLayout({
     </html>
   );
 }
-
