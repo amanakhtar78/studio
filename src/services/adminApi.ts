@@ -1,7 +1,7 @@
 
 'use client';
 import axios from 'axios';
-import type { AdminLoginResponse } from '@/types';
+import type { AdminLoginResponse, AdminProduct } from '@/types';
 
 const adminApiClient = axios.create({
   baseURL: 'https://devapi.tech23.net/cpanel', 
@@ -12,7 +12,7 @@ const adminApiClient = axios.create({
 
 interface AdminLoginPayload {
   MODULENAME: "ECOMMERCE";
-  email: string; // Changed from email0 to email
+  email: string;
   password?: string; 
 }
 
@@ -20,5 +20,14 @@ interface AdminLoginPayload {
 export const adminLoginAPI = (payload: AdminLoginPayload) => 
   adminApiClient.post<AdminLoginResponse>('/login', payload);
 
-export default adminApiClient;
+export const fetchGlobalViewDataAPI = async (viewname: string, token: string) => {
+  return axios.get<AdminProduct[]>(`https://devapi.tech23.net/global/globalViewHandler?viewname=${viewname}`, {
+    headers: {
+      'session-token': token,
+      'Content-Type': 'application/json',
+    },
+  });
+};
 
+
+export default adminApiClient;

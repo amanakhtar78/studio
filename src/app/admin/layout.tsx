@@ -6,10 +6,15 @@ import type { RootState, AppDispatch } from '@/store/store';
 import { loadAdminFromSession } from '@/store/slices/adminAuthSlice';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PanelLeft } from 'lucide-react';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
+import { AdminSidebar } from '@/components/admin/admin-sidebar';
+import { Button } from '@/components/ui/button';
+import { SweetRollsLogo } from '@/components/icons/sweet-rolls-logo';
+import Link from 'next/link';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { isAdminAuthenticated, isLoading: authLoading } = useSelector((state: RootState) => state.adminAuth);
+  const { isAdminAuthenticated, isLoading: authLoading, adminUser } = useSelector((state: RootState) => state.adminAuth);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const pathname = usePathname();
@@ -25,48 +30,70 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Allow access to login page regardless of auth state
     if (pathname === '/admin/login') {
       if (isAdminAuthenticated) {
-        // If on login page but already authenticated, redirect to dashboard
         router.replace('/admin/dashboard');
       }
       return; 
     }
 
-    // For all other admin pages, require authentication
     if (!isAdminAuthenticated) {
       router.replace('/admin/login');
     }
   }, [isAdminAuthenticated, authLoading, router, isMounted, pathname]);
 
-  if (!isMounted || authLoading) {
-    // Show a loader only if not on the login page or if auth state is critical
-    if (pathname !== '/admin/login') {
-        return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-muted">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">Verifying admin session...</p>
-        </div>
-        );
-    }
+  if (!isMounted || (authLoading && pathname !== '/admin/login')) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-muted">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Verifying admin session...</p>
+      </div>
+    );
   }
   
-  // If on login page and not yet redirected (or loading), allow login page to render
-  if (pathname === '/admin/login' && !isAdminAuthenticated) {
+  if (pathname === '/admin/login') {
     return <>{children}</>;
   }
 
-  // If authenticated and not on login page, or if loading but on login page, render children
-  if (isAdminAuthenticated || (pathname === '/admin/login' && (isMounted && !authLoading))) {
-     return <>{children}</>;
+  if (!isAdminAuthenticated && pathname !== '/admin/login') {
+     return (
+       <div className="flex flex-col items-center justify-center min-h-screen bg-muted">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Redirecting to login...</p>
+       </div>
+    );
   }
-  
-  // Fallback for scenarios where conditions above aren't met, typically shows loader
-  // This helps prevent brief flashes of content if redirection logic is still processing.
+
   return (
-     <div className="flex flex-col items-center justify-center min-h-screen bg-muted">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-     </div>
+    <SidebarProvider defaultOpen>
+      <div className="flex min-h-screen bg-background text-foreground">
+        <AdminSidebar />
+        <div className="flex flex-col flex-1">
+          <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 shadow-sm">
+            <div className="md:hidden">
+               <SidebarTrigger asChild>
+                 <Button variant="outline" size="icon" className="h-8 w-8">
+                   <PanelLeft className="h-4 w-4" />
+                   <span className="sr-only">Toggle Menu</span>
+                 </Button>
+               </SidebarTrigger>
+            </div>
+            <div className="flex-1">
+                {/* Optionally, add breadcrumbs or page title here based on pathname */}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {adminUser && (
+                  <span>{adminUser.userCode} ({adminUser.traineeOrTrainer})</span>
+              )}
+            </div>
+          </header>
+          <SidebarInset> {/* This ensures content is offset correctly by the sidebar */}
+            <main className="flex-1 p-4 md:p-6">
+              {children}
+            </main>
+          </SidebarInset>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }

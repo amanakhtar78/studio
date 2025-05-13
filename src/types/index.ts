@@ -144,3 +144,29 @@ export interface AdminAuthState {
   error: string | null;
 }
 // --- END ADMIN AUTH TYPES ---
+
+// --- START ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
+export interface AdminProduct {
+  "ITEM CODE": string;
+  "PART NO": string;
+  "ITEM NAME": string;
+  "ITEM DESCRIPTION": string;
+  "ITEM CATEGORY": string;
+  "ITEM SUB CATEGORY": string;
+  "ITEM CLASSIFICATION": string;
+  "ITEM BASE UOM": string;
+  "ITEM ALT UOM": string;
+  "ITEM CONV FACTOR": number;
+  "ITEM VATABLE": string; // "YES" or "NO"
+  "REORDER LEVEL": number | null;
+  "REORDER QTY": number | null;
+  "COST PRICE": number | null;
+  "LATEST COST PRICE": number | null;
+  "SELLINGPRICE": number | null;
+  "RATING": number | null;
+  "IMAGEPATH": string | null;
+}
+
+export type ImageFilterStatus = "all" | "uploaded" | "not-uploaded";
+
+// --- END ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
