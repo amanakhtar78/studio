@@ -1,6 +1,7 @@
+
 'use client';
 import axios from 'axios';
-import type { AdminLoginResponse, AdminProduct, UploadImageApiResponse, UpdateProductImagePathPayload, UpdateProductImagePathResponse } from '@/types';
+import type { AdminLoginResponse, AdminProduct, UpdateProductImagePathPayload, UpdateProductImagePathResponse } from '@/types';
 
 const adminApiClient = axios.create({
   baseURL: 'https://devapi.tech23.net/cpanel', 
@@ -37,10 +38,11 @@ export const fetchGlobalViewDataAPI = async (
   });
 };
 
-export const uploadImageAPI = async (file: File): Promise<UploadImageApiResponse> => {
+// Updated to return Promise<string> and expect string in response.data
+export const uploadImageAPI = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("imageValue", file);
-  const response = await axios.post<UploadImageApiResponse>(
+  const response = await axios.post<string>( // Expecting the response data to be the URL string directly
     "https://devapi.tech23.net/fileupload/uploadImage",
     formData,
     {
@@ -49,7 +51,7 @@ export const uploadImageAPI = async (file: File): Promise<UploadImageApiResponse
       },
     }
   );
-  return response.data;
+  return response.data; // response.data is now the URL string
 };
 
 export const updateProductImagePathAPI = async (
@@ -66,3 +68,4 @@ export const updateProductImagePathAPI = async (
 
 
 export default adminApiClient;
+

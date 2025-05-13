@@ -18,14 +18,14 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, XCircle, ImagePlus } from 'lucide-react';
 import { uploadImageAPI, updateProductImagePathAPI } from '@/services/adminApi';
-import type { UpdateProductImagePathPayload } from '@/types';
+import type { UpdateProductImagePathPayload, UpdateProductImagePathResponse } from '@/types';
 
 interface UploadImageDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   itemCode: string;
   itemName: string;
-  sClientSecret: string | null;
+  sClientSecret: string | null; // This is the session token
   onUploadSuccess: (itemCode: string, newImagePath: string) => void;
 }
 
@@ -82,8 +82,17 @@ export function UploadImageDialog({
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !sClientSecret) {
-      setUploadError('No file selected or session token is missing.');
+    if (!selectedFile) {
+      setUploadError('No file selected.');
+      return;
+    }
+    if (!sClientSecret) {
+      setUploadError('Session token is missing. Please log in again.');
+      toast({
+        title: 'Authentication Error',
+        description: 'Session token is missing. Please log in again.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -92,35 +101,56 @@ export function UploadImageDialog({
 
     try {
       // Step 1: Upload image to get URL
-      const uploadResponse = await uploadImageAPI(selectedFile);
-      
-      if (!uploadResponse || !uploadResponse.status || !uploadResponse.data) {
-        throw new Error(uploadResponse.message || 'Failed to upload image or invalid response.');
+      // uploadImageAPI now directly returns the URL string or throws an error
+      const imagePath = await uploadImageAPI(selectedFile);
+
+      if (!imagePath || typeof imagePath !== 'string') {
+        throw new Error('Failed to upload image or received an invalid URL.');
       }
-      const imagePath = uploadResponse.data;
 
       // Step 2: Update product image path
       const updatePayload: UpdateProductImagePathPayload = {
         ITEMCODE: itemCode,
         IMAGEPATH: imagePath,
-        SUCCESS_STATUS: '',
-        ERROR_STATUS: '',
+        SUCCESS_STATUS: '', // API expects these, typically empty from client
+        ERROR_STATUS: '',   // API expects these, typically empty from client
       };
+      
       const updateResponse = await updateProductImagePathAPI(updatePayload, sClientSecret);
 
-      if (updateResponse.SUCCESS_STATUS || (updateResponse.data && (updateResponse.data as any).SUCCESS_STATUS) ) { // API response structure might vary
+      // Check for SUCCESS_STATUS in the response from the SP handler
+      // The exact structure of updateResponse needs to be confirmed. Common patterns:
+      // 1. updateResponse.SUCCESS_STATUS directly
+      // 2. updateResponse.data.SUCCESS_STATUS if data is an object
+      // Assuming updateResponse directly contains SUCCESS_STATUS/ERROR_STATUS as per UpdateProductImagePathResponse type
+      if (updateResponse && (updateResponse.SUCCESS_STATUS && updateResponse.SUCCESS_STATUS.toLowerCase().includes('success'))) {
         toast({
           title: 'Upload Successful',
-          description: `Image for ${itemName} updated.`,
+          description: `Image for ${itemName} (Code: ${itemCode}) updated. New path: ${imagePath}`,
         });
         onUploadSuccess(itemCode, imagePath);
-        handleDialogClose(false);
+        handleDialogClose(false); // Close dialog on success
       } else {
-        throw new Error(updateResponse.ERROR_STATUS || (updateResponse.data && (updateResponse.data as any).ERROR_STATUS) || 'Failed to update product image path.');
+        // If no explicit SUCCESS_STATUS or if ERROR_STATUS is present
+        throw new Error(updateResponse?.ERROR_STATUS || 'Failed to update product image path in the database.');
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'An unknown error occurred during upload.';
+      // Try to get a more specific error message
+      let errorMessage = 'An unknown error occurred during upload.';
+      if (error.response && error.response.data) {
+        // If the error response is an object with a message field
+        if (typeof error.response.data.message === 'string') {
+          errorMessage = error.response.data.message;
+        } else if (typeof error.response.data.ERROR_STATUS === 'string' && error.response.data.ERROR_STATUS.trim() !== '') {
+             errorMessage = error.response.data.ERROR_STATUS;
+        } else if (typeof error.response.data === 'string') { // If error.response.data is a string
+          errorMessage = error.response.data;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setUploadError(errorMessage);
       toast({
         title: 'Upload Failed',
