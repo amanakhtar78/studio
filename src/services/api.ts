@@ -1,3 +1,4 @@
+
 'use client';
 import type { AdminProduct } from '@/types'; // Use AdminProduct for raw API response
 import axios from 'axios';
@@ -11,16 +12,22 @@ const apiClient = axios.create({
   },
 });
 
-// Fetches products from viewname=792. 
+// Fetches products from viewname=792.
 // This function assumes the endpoint is publicly accessible without a session token.
 // The response is expected to be AdminProduct[], which will be mapped in productSlice.
-export const fetchProductsAPI = () => 
-  apiClient.get<AdminProduct[]>('https://devapi.tech23.net/global/globalViewHandler?viewname=792');
+export const fetchProductsAPI = () => {
+  const hardcodedSessionToken = "dfwigweui b8dfweiutfbwetf78bwe78fwe88fbwe7fwet7nd6end68";
+  return apiClient.get<AdminProduct[]>('https://devapi.tech23.net/global/globalViewHandler?viewname=792', {
+    headers: {
+      'session-token': hardcodedSessionToken,
+    }
+  });
+}
 
 // Categories are now derived from products, so a separate API call might not be needed.
 // If categories were from a different endpoint, it would be here.
 // For now, commenting out or removing, as categorySlice will handle derivation.
-// export const fetchCategoriesAPI = () => apiClient.get<string[]>('/products/categories'); 
+// export const fetchCategoriesAPI = () => apiClient.get<string[]>('/products/categories');
 
 // Fetching a single product by ID might require a different approach or endpoint
 // with the new API. For now, this is based on fakestoreapi structure and might
