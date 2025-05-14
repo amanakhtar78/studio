@@ -22,9 +22,10 @@ import { useAuth } from '@/context/auth-context';
 import { useAuthModal } from '@/hooks/use-auth-modal';
 import { useRouter } from 'next/navigation';
 
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/store/store';
-import type { Category } from '@/types';
+// Removed useSelector and RootState as dynamic categories are removed from navbar
+// import { useSelector } from 'react-redux';
+// import type { RootState } from '@/store/store';
+// import type { Category } from '@/types';
 
 interface NavbarProps {
   theme: 'light' | 'dark';
@@ -38,39 +39,13 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
   const { openModal: openAuthModal } = useAuthModal();
   const router = useRouter();
 
-  const categoriesFromStore = useSelector((state: RootState) => state.categories.items);
-  const categoryStatus = useSelector((state: RootState) => state.categories.status);
+  // Categories are no longer fetched or used directly in the navbar for links
+  // const categoriesFromStore = useSelector((state: RootState) => state.categories.items);
+  // const categoryStatus = useSelector((state: RootState) => state.categories.status);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const handleScrollToCategory = (slug: string, closeSheet?: () => void) => {
-    closeSheet?.();
-
-    const element = document.getElementById(slug);
-    if (element) {
-        const headerOffset = 64 + 64 + 20; 
-        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - headerOffset; 
-
-        window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-        });
-    } else {
-        router.push('/');
-        setTimeout(() => {
-            const el = document.getElementById(slug);
-            if (el) {
-                const headerOffset = 64 + 64 + 20;
-                const elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
-                const offsetPosition = elementPosition - headerOffset;
-                window.scrollTo({ top: offsetPosition, behavior: 'smooth'});
-            }
-        }, 300); 
-    }
-  };
 
   const handleTrackOrderClick = (closeSheet?: () => void) => {
     closeSheet?.();
@@ -93,19 +68,9 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
   };
 
 
-  const navLinks = (categoriesToUse: Category[], closeSheet?: () => void) => (
+  const navLinks = (closeSheet?: () => void) => (
     <>
-      {categoriesToUse.map((category) => (
-        <Button
-          key={category.id}
-          variant="ghost"
-          size="sm" 
-          onClick={() => handleScrollToCategory(category.slug, closeSheet)}
-          className="text-xs font-medium text-foreground/80 hover:text-foreground w-full justify-start md:w-auto md:justify-center px-2"
-        >
-          {category.name}
-        </Button>
-      ))}
+      {/* Dynamic category links removed */}
       <Button
         variant="ghost"
         size="sm" 
@@ -136,7 +101,7 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
     );
   }
   
-  const currentCategories = categoryStatus === 'succeeded' ? categoriesFromStore : [];
+  // const currentCategories = categoryStatus === 'succeeded' ? categoriesFromStore : [];
 
 
   return (
@@ -150,7 +115,7 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
         </Link>
 
         <nav className="hidden md:flex items-center space-x-0.5 lg:space-x-1"> 
-          {navLinks(currentCategories)}
+          {navLinks()}
         </nav>
 
         <div className="flex items-center space-x-1.5 md:space-x-2"> 
@@ -229,7 +194,7 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
                     </div>
                   )}
                   <SheetClose asChild>
-                    <div>{navLinks(currentCategories, () => {})}</div>
+                    <div>{navLinks(() => {})}</div>
                   </SheetClose>
                   
                   {isAuthenticated && user && (
