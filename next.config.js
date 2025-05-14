@@ -17,16 +17,16 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'fakestoreapi.com',
-        port: '',
-        pathname: '/img/**', // Path for product images on fakestoreapi
-      },
-      {
-        protocol: 'https',
         hostname: 'marstrackstorage.s3.amazonaws.com',
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co', // Added for placeholder images
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };

@@ -7,7 +7,7 @@ import { createContext, useContext, useState, useMemo, useCallback } from 'react
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (productId: string) => void; // productId will be string (product.id.toString())
+  addItem: (productId: string) => void; 
   removeItem: (productId: string) => void;
   updateItemQuantity: (productId: string, quantity: number) => void;
   getItemQuantity: (productId: string) => number;
@@ -73,21 +73,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const getCartItemsWithDetails = useCallback((allApiProducts: Product[]): CartItemWithProductDetails[] => {
     return items.map(cartItem => {
-      // API product.id is number, cartItem.productId is string
-      const productDetails = allApiProducts.find(p => p.id.toString() === cartItem.productId);
+      // Product.id is now string (ITEM CODE), cartItem.productId is also string
+      const productDetails = allApiProducts.find(p => p.id === cartItem.productId);
       
       if (!productDetails) {
         console.warn(`Product with ID ${cartItem.productId} not found in API products list.`);
-        return null; 
+        // Return a minimal structure or skip if product not found
+        return null;
       }
       return {
-        ...productDetails, // Spread all API product properties (id, title, price, description, category, image, rating)
+        ...productDetails, // Spread all Product properties
         cartQuantity: cartItem.quantity,
         itemTotal: productDetails.price * cartItem.quantity,
-        stockAvailability: productDetails.stockAvailability !== undefined ? productDetails.stockAvailability : true, // Ensure stockAvailability is present
+        // stockAvailability is already part of productDetails from the slice
       };
     }).filter(item => item !== null) as CartItemWithProductDetails[];
   }, [items]);
+
 
   const getCartSubtotal = useCallback((allApiProducts: Product[]) => {
     return getCartItemsWithDetails(allApiProducts).reduce((total, item) => total + item.price * item.cartQuantity, 0);

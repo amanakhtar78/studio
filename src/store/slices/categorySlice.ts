@@ -1,6 +1,7 @@
-import type { Category } from '@/types';
+
+import type { Category, AdminProduct } from '@/types';
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { fetchCategoriesAPI } from '@/services/api';
+import { fetchProductsAPI } from '@/services/api'; // We need products to derive categories
 
 interface CategoriesState {
   items: Category[];
@@ -16,13 +17,21 @@ const initialState: CategoriesState = {
 
 const generateSlug = (name: string): string => name.toLowerCase().replace(/\s+/g, '-').replace(/'/g, '');
 
+// Fetch categories by first fetching products and then deriving unique categories from them
 export const fetchCategories = createAsyncThunk('categories/fetchCategories', async () => {
-  const response = await fetchCategoriesAPI();
-  return (response.data as string[]).map((name) => {
+  const productResponse = await fetchProductsAPI(); // Fetches AdminProduct[]
+  const uniqueCategoryNames = new Set<string>();
+  productResponse.data.forEach((product: AdminProduct) => {
+    if (product["ITEM CATEGORY"]) {
+      uniqueCategoryNames.add(product["ITEM CATEGORY"]);
+    }
+  });
+  
+  return Array.from(uniqueCategoryNames).map((name) => {
     const slug = generateSlug(name);
     return {
-      id: `cat-${slug}`, // Generate a unique ID based on the slug
-      name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize first letter
+      id: `cat-${slug}`,
+      name: name, // API provides capitalized names usually, otherwise: name.charAt(0).toUpperCase() + name.slice(1).toLowerCase(),
       slug: slug,
     };
   });

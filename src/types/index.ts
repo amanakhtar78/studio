@@ -9,24 +9,35 @@ export interface BannerImage {
 }
 
 export interface Category {
-  id: string; // Generated: "cat-slug-from-name" or from API if available
-  name: string; // From API (e.g., "electronics")
-  slug: string; // Generated: "electronics" or from API
+  id: string; 
+  name: string; 
+  slug: string; 
 }
 
+// Updated Product interface to match new API (viewname=792)
 export interface Product {
-  id: number; // from API
-  title: string; // API uses title (map to name if needed by components)
-  price: number;
-  description: string;
-  category: string; // API returns category name directly (map to categoryName if needed)
-  image: string; // API uses image (map to imageUrl if needed)
-  rating: {
+  id: string; // ITEM CODE (string)
+  title: string; // ITEM NAME
+  price: number; // SELLINGPRICE
+  description: string; // ITEM DESCRIPTION
+  category: string; // ITEM CATEGORY
+  image: string | null; // IMAGEPATH
+  classification: string; // ITEM CLASSIFICATION
+  rating: { // Derived from RATING
     rate: number;
-    count: number;
+    count: number; // Defaulted to 0 as API doesn't provide count
   };
-  // Fields like stockAvailability can be added if API supports or default assumed
-  stockAvailability?: boolean; // Added for consistency, will default to true
+  stockAvailability: boolean; // Defaulted to true
+  // Raw API fields for potential direct access if needed, though mapped fields are preferred
+  PART_NO?: string;
+  ITEM_BASE_UOM?: string;
+  ITEM_ALT_UOM?: string;
+  ITEM_CONV_FACTOR?: number;
+  ITEM_VATABLE?: string;
+  REORDER_LEVEL?: number | null;
+  REORDER_QTY?: number | null;
+  COST_PRICE?: number | null;
+  LATEST_COST_PRICE?: number | null;
 }
 
 // --- START AUTH and USER TYPES ---
@@ -66,12 +77,12 @@ export const DELIVERY_ORDER_STATUS_STEPS: OrderStatusDelivery[] = ["Order Placed
 
 
 export interface OrderItemDetail {
-  productId: string; // Keep as string to match CartItem
-  name: string; // This should align with Product's title
+  productId: string; // Align with Product.id (ITEM CODE)
+  name: string; // Product title
   quantity: number;
-  price: number; // Price at the time of order for one unit
-  imageUrl?: string; // This should align with Product's image
-  dataAiHint?: string; // This might be deprecated if API doesn't provide similar
+  price: number; // Price at the time of order
+  imageUrl?: string | null; // Product image
+  dataAiHint?: string;
 }
 
 export interface Order {
@@ -83,30 +94,28 @@ export interface Order {
   items: OrderItemDetail[];
   totalAmount: number;
   orderDate: string; // ISO string
-  estimatedTime?: string; // e.g., "10 mins", "Ready by 7:00 PM"
-  deliveryDetails?: CheckoutFormData; // If delivery - This is specific to an order
+  estimatedTime?: string; 
+  deliveryDetails?: CheckoutFormData; 
 }
 // --- END ORDER TYPES ---
 
 
 export interface CartItem {
-  productId: string; // Store as string, API product ID is number
+  productId: string; // Corresponds to Product.id (ITEM CODE)
   quantity: number;
 }
 
-// This type will be used when combining CartItem with full Product details from the store
 export interface CartItemWithProductDetails extends Product {
-  cartQuantity: number; // Renamed from quantity to avoid clash with Product.rating.count or other quantity fields
+  cartQuantity: number; 
   itemTotal: number;
 }
 
 
-// This is for one-off checkout, distinct from User's primary address
 export interface CheckoutFormData {
-  fullName: string; // Could be pre-filled from User.name
-  phoneNumber: string; // Could be pre-filled from User.phoneNumber
-  deliveryAddress: string; // This is the full street address for delivery for THIS order
-  pinCode: string; // Pin code for THIS order
+  fullName: string; 
+  phoneNumber: string; 
+  deliveryAddress: string; 
+  pinCode: string; 
 }
 
 export interface TimelineEvent {
@@ -127,13 +136,13 @@ export interface AdminUser {
   userType: boolean;
   userCode: string;
   emailId: string;
-  traineeOrTrainer: string; // Or a more specific type if values are known
+  traineeOrTrainer: string; 
 }
 
 export interface AdminLoginResponse {
   user: AdminUser;
   authenticationToken: string;
-  sclientSecret: string; // Note: sclientSecret, not clientSecret based on user example
+  sclientSecret: string; 
 }
 
 export interface AdminAuthState {
@@ -147,6 +156,7 @@ export interface AdminAuthState {
 // --- END ADMIN AUTH TYPES ---
 
 // --- START ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
+// This is the raw type from the API viewname=792
 export interface AdminProduct {
   "ITEM CODE": string;
   "PART NO": string;
@@ -158,7 +168,7 @@ export interface AdminProduct {
   "ITEM BASE UOM": string;
   "ITEM ALT UOM": string;
   "ITEM CONV FACTOR": number;
-  "ITEM VATABLE": string; // "YES" or "NO"
+  "ITEM VATABLE": string; 
   "REORDER LEVEL": number | null;
   "REORDER QTY": number | null;
   "COST PRICE": number | null;
@@ -171,7 +181,7 @@ export interface AdminProduct {
 export type ImageFilterStatus = "all" | "uploaded" | "not-uploaded";
 
 export interface UploadImageApiResponse {
-  data: string; // Assuming the API returns { data: "image_url_string" }
+  data: string; 
   message: string;
   status: boolean;
 }
@@ -179,14 +189,11 @@ export interface UploadImageApiResponse {
 export interface UpdateProductImagePathPayload {
   ITEMCODE: string;
   IMAGEPATH: string;
-  SUCCESS_STATUS: string; // Typically empty string from frontend
-  ERROR_STATUS: string; // Typically empty string from frontend
+  SUCCESS_STATUS: string; 
+  ERROR_STATUS: string;   
 }
 
 export interface UpdateProductImagePathResponse {
-  message: string; // e.g., "Document Saved" or an error message from SP
-  // The API might return other fields, but based on current info, 'message' is primary.
+  message: string; 
 }
 // --- END ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
-
-

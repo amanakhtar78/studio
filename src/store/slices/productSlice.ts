@@ -1,4 +1,5 @@
-import type { Product } from '@/types';
+
+import type { Product, AdminProduct } from '@/types';
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import { fetchProductsAPI } from '@/services/api';
 
@@ -16,8 +17,25 @@ const initialState: ProductsState = {
 
 export const fetchProducts = createAsyncThunk('products/fetchProducts', async () => {
   const response = await fetchProductsAPI();
-  // Add stockAvailability to each product, default to true
-  return response.data.map(product => ({ ...product, stockAvailability: true })) as Product[];
+  // Map AdminProduct[] from API to Product[] for the application
+  return response.data.map((adminProduct: AdminProduct): Product => ({
+    id: adminProduct["ITEM CODE"],
+    title: adminProduct["ITEM NAME"],
+    price: adminProduct["SELLINGPRICE"] ?? 0, // Default to 0 if null
+    description: adminProduct["ITEM DESCRIPTION"],
+    category: adminProduct["ITEM CATEGORY"],
+    image: adminProduct["IMAGEPATH"], // Can be string or null
+    classification: adminProduct["ITEM CLASSIFICATION"],
+    rating: {
+      rate: adminProduct["RATING"] ?? 0, // Default to 0 if null
+      count: 0, // New API doesn't provide count, so default
+    },
+    stockAvailability: true, // Defaulting to true as API doesn't provide this
+    // Optionally map other fields if needed by the Product type
+    PART_NO: adminProduct["PART NO"],
+    ITEM_BASE_UOM: adminProduct["ITEM BASE UOM"],
+    // ... other raw fields if necessary
+  }));
 });
 
 const productSlice = createSlice({

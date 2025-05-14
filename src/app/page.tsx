@@ -1,3 +1,4 @@
+
 'use client';
 import { Banner } from '@/components/banner';
 import { ProductList } from '@/components/product-list';
@@ -18,13 +19,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '@/store/store';
 import { fetchProducts } from '@/store/slices/productSlice';
 import { fetchCategories } from '@/store/slices/categorySlice';
-import type { Product, Category as CategoryType } from '@/types';
+import type { Product, Category as CategoryType } from '@/types'; // Product type is updated
 
 export default function HomePage() {
   const { searchQuery, setSearchQuery } = useSearch();
   const [isMounted, setIsMounted] = useState(false);
 
-  const [selectedGlobalCategory, setSelectedGlobalCategory] = useState<string>('all');
+  const [selectedClassification, setSelectedClassification] = useState<string>('all');
+  const [selectedGlobalCategory, setSelectedGlobalCategory] = useState<string>('all'); // ITEM CATEGORY
   const [sortOption, setSortOption] = useState<string>('relevance');
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
@@ -32,7 +34,7 @@ export default function HomePage() {
 
   const dispatch = useDispatch<AppDispatch>();
   const { items: allProducts, status: productStatus, error: productError } = useSelector((state: RootState) => state.products);
-  const { items: allCategories, status: categoryStatus, error: categoryError } = useSelector((state: RootState) => state.categories);
+  const { items: allCategories, status: categoryStatus, error: categoryError } = useSelector((state: RootState) => state.categories); // ITEM CATEGORY derived
 
   useEffect(() => {
     setIsMounted(true);
@@ -48,8 +50,14 @@ export default function HomePage() {
     setSearchQuery(event.target.value);
   };
 
+  const distinctClassifications = useMemo(() => {
+    if (productStatus !== 'succeeded') return ['all'];
+    return ['all', ...new Set(allProducts.map(p => p.classification).filter(Boolean).sort())];
+  }, [allProducts, productStatus]);
+
   const handleClearFilters = () => {
     setSearchQuery('');
+    setSelectedClassification('all');
     setSelectedGlobalCategory('all');
     setSortOption('relevance');
     setMinPrice('');
@@ -62,10 +70,13 @@ export default function HomePage() {
     onOpenChange: setIsFilterSidebarOpen,
     sortOption, setSortOption,
     selectedGlobalCategory, setSelectedGlobalCategory,
-    allCategories,
+    allCategories, // These are "ITEM CATEGORY"
+    distinctClassifications, // These are "ITEM CLASSIFICATION"
+    selectedClassification, setSelectedClassification,
     minPrice, setMinPrice,
     maxPrice, setMaxPrice,
-    categoryStatus,
+    categoryStatus, // For "ITEM CATEGORY"
+    productStatus, // For "ITEM CLASSIFICATION"
     onClearFilters: handleClearFilters
   };
 
@@ -75,11 +86,16 @@ export default function HomePage() {
       const lowercasedQuery = searchQuery.toLowerCase();
       products = products.filter(product =>
         product.title.toLowerCase().includes(lowercasedQuery) ||
-        product.description.toLowerCase().includes(lowercasedQuery)
+        product.description.toLowerCase().includes(lowercasedQuery) ||
+        product.category.toLowerCase().includes(lowercasedQuery) || // ITEM CATEGORY
+        product.classification.toLowerCase().includes(lowercasedQuery) // ITEM CLASSIFICATION
       );
     }
+    if (selectedClassification !== 'all') {
+      products = products.filter(p => p.classification === selectedClassification);
+    }
     if (selectedGlobalCategory !== 'all') {
-      products = products.filter(p => p.category.toLowerCase() === selectedGlobalCategory.toLowerCase());
+      products = products.filter(p => p.category === selectedGlobalCategory); // ITEM CATEGORY
     }
     const numMinPrice = parseFloat(minPrice);
     const numMaxPrice = parseFloat(maxPrice);
@@ -98,24 +114,30 @@ export default function HomePage() {
       default: break;
     }
     return products;
-  }, [allProducts, searchQuery, selectedGlobalCategory, minPrice, maxPrice, sortOption]);
+  }, [allProducts, searchQuery, selectedGlobalCategory, selectedClassification, minPrice, maxPrice, sortOption]);
 
   const displayableSections = useMemo(() => {
-    const relevantCategories = selectedGlobalCategory !== 'all'
-      ? allCategories.filter(c => c.name.toLowerCase() === selectedGlobalCategory.toLowerCase())
+    // Group products by ITEM CATEGORY for display
+    const relevantItemCategories = selectedGlobalCategory !== 'all'
+      ? allCategories.filter(c => c.name === selectedGlobalCategory)
       : allCategories;
-    return relevantCategories
-      .map(category => {
-        const productsForCategory = processedProducts.filter(p => p.category.toLowerCase() === category.name.toLowerCase());
-        const hasActiveFilters = searchQuery.trim() !== '' || minPrice !== '' || maxPrice !== '' || selectedGlobalCategory !== 'all' || sortOption !== 'relevance';
+
+    return relevantItemCategories
+      .map(categoryObj => { // categoryObj is {id, name, slug} for ITEM CATEGORY
+        const productsForCategory = processedProducts.filter(p => p.category === categoryObj.name);
+        const hasActiveFilters = searchQuery.trim() !== '' || minPrice !== '' || maxPrice !== '' || selectedGlobalCategory !== 'all' || selectedClassification !== 'all' || sortOption !== 'relevance';
+        
+        // If a specific ITEM CATEGORY is selected, only render that section
         if (selectedGlobalCategory !== 'all') {
-          return { category, products: productsForCategory, shouldRender: category.name.toLowerCase() === selectedGlobalCategory.toLowerCase() };
+          return { category: categoryObj, products: productsForCategory, shouldRender: categoryObj.name === selectedGlobalCategory };
         } else {
-          return { category, products: productsForCategory, shouldRender: productsForCategory.length > 0 || !hasActiveFilters };
+        // If "All Categories" is selected, render section if it has products or if no filters are active (to show all empty categories too)
+          return { category: categoryObj, products: productsForCategory, shouldRender: productsForCategory.length > 0 || !hasActiveFilters };
         }
       })
       .filter(section => section.shouldRender);
-  }, [allCategories, selectedGlobalCategory, processedProducts, searchQuery, minPrice, maxPrice, sortOption]);
+  }, [allCategories, selectedGlobalCategory, processedProducts, searchQuery, minPrice, maxPrice, sortOption, selectedClassification]);
+
 
   if (!isMounted) {
     return (
@@ -127,7 +149,7 @@ export default function HomePage() {
 
   const isLoadingData = productStatus === 'loading' || categoryStatus === 'loading';
   const hasFailed = productStatus === 'failed' || categoryStatus === 'failed';
-  const hasActiveFilters = searchQuery.trim() !== '' || minPrice !== '' || maxPrice !== '' || selectedGlobalCategory !== 'all' || sortOption !== 'relevance';
+  const hasActiveFilters = searchQuery.trim() !== '' || minPrice !== '' || maxPrice !== '' || selectedGlobalCategory !== 'all' || selectedClassification !== 'all' || sortOption !== 'relevance';
 
   if (isLoadingData) {
     return (
@@ -153,7 +175,7 @@ export default function HomePage() {
       </div>
     );
   }
-
+  
   return (
     <div className="flex flex-col">
       <div className="container max-w-screen-2xl px-2 md:px-4 py-4 md:py-6">
@@ -216,7 +238,31 @@ export default function HomePage() {
                     </SelectContent>
                     </Select>
                 </div>
+                
+                {/* ITEM CLASSIFICATION Filter - Desktop */}
+                {productStatus === 'succeeded' && distinctClassifications.length > 1 && (
+                    <div className="flex-shrink-0">
+                    <Label htmlFor="classification-filter-desktop" className="sr-only">Classification</Label>
+                    <Select value={selectedClassification} onValueChange={setSelectedClassification}>
+                        <SelectTrigger id="classification-filter-desktop" className="h-10 text-sm w-auto min-w-[140px] lg:min-w-[160px]">
+                        <SelectValue placeholder="All Classifications" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {distinctClassifications.map((clf) => (
+                            <SelectItem key={clf} value={clf}>
+                            {clf === 'all' ? 'All Classifications' : clf}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    </div>
+                )}
+                {productStatus === 'loading' && (
+                    <div className="h-10 w-[140px] lg:w-[160px] bg-muted rounded-md animate-pulse flex-shrink-0"></div>
+                )}
 
+
+                {/* ITEM CATEGORY Filter - Desktop */}
                 {categoryStatus === 'succeeded' && allCategories.length > 0 && (
                     <div className="flex-shrink-0">
                     <Label htmlFor="category-filter-desktop" className="sr-only">Category</Label>
@@ -226,7 +272,7 @@ export default function HomePage() {
                         </SelectTrigger>
                         <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
-                        {allCategories.map((cat) => (
+                        {allCategories.map((cat) => ( // allCategories are derived "ITEM CATEGORY"
                             <SelectItem key={cat.id} value={cat.name}>
                             {cat.name}
                             </SelectItem>
@@ -238,6 +284,7 @@ export default function HomePage() {
                 {categoryStatus === 'loading' && (
                     <div className="h-10 w-[130px] lg:w-[150px] bg-muted rounded-md animate-pulse flex-shrink-0"></div>
                 )}
+
 
                 <div className="flex-shrink-0">
                     <Label htmlFor="min-price-desktop" className="sr-only">Min Price</Label>
@@ -287,10 +334,10 @@ export default function HomePage() {
                 </div>
             )}
 
-            {displayableSections.map(({ category, products: productsForSection }, index) => (
+            {displayableSections.map(({ category, products: productsForSection }, index) => ( // category here is "ITEM CATEGORY" object
                 <div key={category.id}>
                 <ProductList
-                    category={category}
+                    category={category} // Pass the "ITEM CATEGORY" object
                     products={productsForSection}
                     className={index === 0 ? "pt-0 md:pt-0 pb-4 md:pb-6" : "py-4 md:py-6"}
                 />

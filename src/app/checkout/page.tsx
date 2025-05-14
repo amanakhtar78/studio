@@ -14,7 +14,7 @@ import { Minus, Plus, Trash2, Loader2, ShoppingCart } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
-import type { CheckoutFormData } from '@/types';
+import type { CheckoutFormData, Product } from '@/types'; // Product type is updated
 import { useEffect, useState, useMemo } from 'react';
 
 import {
@@ -51,6 +51,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // allApiProducts are now of the updated Product type
   const { items: allApiProducts, status: productStatus } = useSelector((state: RootState) => state.products);
   
   const cartItemsWithDetails = useMemo(() => {
@@ -58,14 +59,14 @@ export default function CheckoutPage() {
       return getCartItemsWithDetails(allApiProducts);
     }
     return [];
-  }, [productStatus, allApiProducts, getCartItemsWithDetails]);
+  }, [productStatus, allApiProducts, getCartItemsWithDetails, cartItemsBase]); // Added cartItemsBase
 
   const cartSubtotal = useMemo(() => {
     if (productStatus === 'succeeded' && allApiProducts.length > 0) {
       return getCartSubtotal(allApiProducts);
     }
     return 0;
-  }, [productStatus, allApiProducts, getCartSubtotal]);
+  }, [productStatus, allApiProducts, getCartSubtotal, cartItemsBase]); // Added cartItemsBase
 
 
   const form = useForm<CheckoutFormData>({
@@ -80,21 +81,21 @@ export default function CheckoutPage() {
 
   const [useProfileAddress, setUseProfileAddress] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState(false);
+  const placeholderImage = "https://placehold.co/64x64.png";
+
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Effect to initialize 'useProfileAddress' based on auth status and user's address
   useEffect(() => {
     if (isMounted && isAuthenticated && user?.address) {
       setUseProfileAddress(true);
     } else if (isMounted) {
       setUseProfileAddress(false);
     }
-  }, [isMounted, isAuthenticated, user]); // user?.address existence
+  }, [isMounted, isAuthenticated, user]); 
 
-  // Effect to reset form fields based on authentication status and address preference
   useEffect(() => {
     if (!isMounted) return;
 
@@ -124,7 +125,7 @@ export default function CheckoutPage() {
         pinCode: '',
       });
     }
-  }, [isMounted, user, isAuthenticated, useProfileAddress, form.reset]);
+  }, [isMounted, user, isAuthenticated, useProfileAddress, form]);
 
 
   const onSubmit = (data: CheckoutFormData) => {
@@ -136,10 +137,9 @@ export default function CheckoutPage() {
     toast({
       title: 'Order Placed!',
       description: 'Your delicious treats are on their way!',
-      variant: 'default', // Explicitly default, can be success if theme supports
+      variant: 'default', 
     });
     clearCart();
-    // In a real app, you would get the orderId from the backend response
     const mockOrderId = `ORD${Date.now().toString().slice(-6)}`; 
     router.push(`/my-orders/${mockOrderId}?new=true`); 
   };
@@ -192,7 +192,14 @@ export default function CheckoutPage() {
               {cartItemsWithDetails.length > 0 ? cartItemsWithDetails.map((item) => (
                 <div key={item.id} className="flex items-center space-x-3 py-3 first:pt-0 last:pb-0">
                   <div className="relative w-16 h-16 rounded-md overflow-hidden bg-white p-1 border">
-                    <Image src={item.image} alt={item.title} layout="fill" objectFit="contain" />
+                    <Image 
+                      src={item.image || placeholderImage} 
+                      alt={item.title} 
+                      layout="fill" 
+                      objectFit="contain" 
+                      data-ai-hint="product bakery"
+                      onError={(e) => { (e.target as HTMLImageElement).src = placeholderImage; }}
+                    />
                   </div>
                   <div className="flex-grow">
                     <h3 className="font-semibold text-sm">{item.title}</h3>
@@ -204,7 +211,7 @@ export default function CheckoutPage() {
                       variant="outline" 
                       size="icon" 
                       className="h-9 w-9" 
-                      onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity - 1)}
+                      onClick={() => updateItemQuantity(item.id, item.cartQuantity - 1)} // item.id is now string
                       aria-label={`Decrease quantity of ${item.title}`}
                     > 
                       <Minus className="h-4 w-4" />
@@ -214,7 +221,7 @@ export default function CheckoutPage() {
                       variant="outline" 
                       size="icon" 
                       className="h-9 w-9" 
-                      onClick={() => updateItemQuantity(item.id.toString(), item.cartQuantity + 1)} 
+                      onClick={() => updateItemQuantity(item.id, item.cartQuantity + 1)} // item.id is now string
                       disabled={!item.stockAvailability}
                       aria-label={`Increase quantity of ${item.title}`}
                     > 
@@ -226,7 +233,7 @@ export default function CheckoutPage() {
                     variant="ghost" 
                     size="icon" 
                     className="text-destructive hover:text-destructive/80 h-9 w-9" 
-                    onClick={() => updateItemQuantity(item.id.toString(), 0)}
+                    onClick={() => updateItemQuantity(item.id, 0)} // item.id is now string
                     aria-label={`Remove ${item.title} from cart`}
                   > 
                      <Trash2 className="h-4 w-4" />
@@ -350,4 +357,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-

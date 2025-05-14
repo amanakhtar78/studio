@@ -15,47 +15,51 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Category } from '@/types';
 import { Trash2 } from 'lucide-react';
-import { FilterControls } from '@/components/filter-controls'; // Import FilterControls
+import { FilterControls } from '@/components/filter-controls'; 
 
 interface FilterSidebarProps {
   isOpen: boolean;
   onOpenChange: Dispatch<SetStateAction<boolean>>;
   sortOption: string;
   setSortOption: Dispatch<SetStateAction<string>>;
+  
   selectedGlobalCategory: string;
   setSelectedGlobalCategory: Dispatch<SetStateAction<string>>;
-  allCategories: Category[];
+  allCategories: Category[]; // ITEM CATEGORIES
+
+  selectedClassification: string;
+  setSelectedClassification: Dispatch<SetStateAction<string>>;
+  distinctClassifications: string[]; // ITEM CLASSIFICATIONS
+
   minPrice: string;
   setMinPrice: Dispatch<SetStateAction<string>>;
   maxPrice: string;
   setMaxPrice: Dispatch<SetStateAction<string>>;
+  
   onClearFilters: () => void;
-  categoryStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  categoryStatus: 'idle' | 'loading' | 'succeeded' | 'failed'; // For ITEM CATEGORY
+  productStatus: 'idle' | 'loading' | 'succeeded' | 'failed'; // For ITEM CLASSIFICATION
 }
 
 export function FilterSidebar({
   isOpen,
   onOpenChange,
-  sortOption,
-  setSortOption,
-  selectedGlobalCategory,
-  setSelectedGlobalCategory,
-  allCategories,
-  minPrice,
-  setMinPrice,
-  maxPrice,
-  setMaxPrice,
+  sortOption, setSortOption,
+  selectedGlobalCategory, setSelectedGlobalCategory, allCategories,
+  selectedClassification, setSelectedClassification, distinctClassifications,
+  minPrice, setMinPrice,
+  maxPrice, setMaxPrice,
   onClearFilters,
-  categoryStatus,
+  categoryStatus, productStatus
 }: FilterSidebarProps) {
   
   const filterControlsProps = {
     sortOption, setSortOption,
-    selectedGlobalCategory, setSelectedGlobalCategory,
-    allCategories,
+    selectedGlobalCategory, setSelectedGlobalCategory, allCategories,
+    selectedClassification, setSelectedClassification, distinctClassifications,
     minPrice, setMinPrice,
     maxPrice, setMaxPrice,
-    categoryStatus
+    categoryStatus, productStatus
   };
 
   return (
@@ -89,4 +93,3 @@ export function FilterSidebar({
     </Sheet>
   );
 }
-
