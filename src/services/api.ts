@@ -16,7 +16,7 @@ const apiClient = axios.create({
 // This function assumes the endpoint is publicly accessible without a session token.
 // The response is expected to be AdminProduct[], which will be mapped in productSlice.
 export const fetchProductsAPI = () => {
-  const hardcodedSessionToken = "dfwigweui b8dfweiutfbwetf78bwe78fwe88fbwe7fwet7nd6end68";
+  const hardcodedSessionToken = "MjU3OTU0ZTAxNWJlNTNkN2M5MTE2MTI3NzM3YzhmZDY6N2RhZWE2NmNhMzRjYzIyMzQ1OWU0NjAwODI4NDVmNzU1NmUwMmM0MjdjMGQ3MTMxYWRkZDE4NDU4NTI5OWIwMy8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjplZGZlNDY3M2M0YzQ4MGVjYzg1NjFmZTM1MDFmZTI2NS8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3MjQ3YmZmOWMxZWEyMWRkYTQwZDA1OGU2ZTM0MDAyNi8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3YjYyZjgxMTA4ZjI4NzRjNDRiM2EwZWMwNGVlYzQzNw==";
   return apiClient.get<AdminProduct[]>('https://devapi.tech23.net/global/globalViewHandler?viewname=792', {
     headers: {
       'session-token': hardcodedSessionToken,
@@ -33,3 +33,4 @@ export const fetchProductsAPI = () => {
 // with the new API. For now, this is based on fakestoreapi structure and might
 // need to be adapted or removed if not applicable to viewname=792.
 // export const fetchProductByIdAPI = (id: string) => apiClient.get<AdminProduct>(`/products/${id}`); // Assuming AdminProduct for single fetch too
+
