@@ -14,8 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogIn } from 'lucide-react';
+import { Loader2, LogIn, ArrowLeft } from 'lucide-react';
 import { SweetRollsLogo } from '@/components/icons/sweet-rolls-logo';
+import Link from 'next/link';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -110,7 +111,10 @@ export default function AdminLoginPage() {
         </CardContent>
       </Card>
       <p className="text-xs text-muted-foreground mt-6 text-center">
-        This is the ECOMMERCE module admin login. <br/> For demo: use email <strong className="text-foreground">zahra@gbsafrica.net</strong> and password <strong className="text-foreground">zahra</strong>.
+        <Link href="/" className="text-primary hover:underline flex items-center justify-center">
+          <ArrowLeft className="mr-1 h-3 w-3" />
+          Back to Landing Page
+        </Link>
       </p>
     </div>
   );
