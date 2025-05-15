@@ -23,6 +23,7 @@ export function Footer() {
               <li><Link href="/#cookies" className="hover:text-primary">Cookies</Link></li>
               <li><Link href="/#beverages" className="hover:text-primary">Beverages</Link></li>
               <li><Link href="/track-order" className="hover:text-primary">Track My Order</Link></li>
+              <li><Link href="/admin/login" className="hover:text-primary">Admin Login</Link></li> {/* Added Admin Login link */}
             </ul>
           </div>
           <div>
