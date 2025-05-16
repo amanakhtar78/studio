@@ -53,8 +53,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         street: apiUser.PHYSICALADDRESS,
         city: apiUser.CITY,
         pinCode: apiUser.POSTALCODE,
-        country: apiUser.COUNTRY || '', // Assuming country might be optional from API
-        addressType: 'home', // Defaulting address type
+        country: apiUser.COUNTRY || '', 
+        addressType: (apiUser.PHYSICALADDRESS?.toLowerCase().includes('office') ? 'office' : 'home') as AddressType, // Basic inference for addressType
       } : undefined,
     };
   };
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       FIRSTNAME: data.firstName,
       LASTNAME: data.lastName,
       EMAILADDRESS: data.email,
-      PASSWORD: data.password, // Signup always requires password
+      PASSWORD: data.password, 
       COUNTRY: data.country || '', 
       CITY: data.addressCity || '',
       POSTALCODE: data.addressPinCode || '',
@@ -165,37 +165,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoading(true);
 
-    const currentUser = user; // Get current user from state
+    const currentUser = user; 
 
-    // Prepare payload for SP 128 (similar to signup but without password if not changing)
     const payload: UserSignupPayload = {
       FIRSTNAME: updatedProfileData.firstName || currentUser.firstName || '',
       LASTNAME: updatedProfileData.lastName || currentUser.lastName || '',
-      EMAILADDRESS: currentUser.email, // Email is the key, should not change
-      PHONENUMBER: updatedProfileData.phoneNumber !== undefined ? updatedProfileData.phoneNumber : currentUser.phoneNumber,
-      PHYSICALADDRESS: updatedProfileData.address?.street !== undefined ? updatedProfileData.address.street : currentUser.address?.street,
-      CITY: updatedProfileData.address?.city !== undefined ? updatedProfileData.address.city : currentUser.address?.city,
-      POSTALCODE: updatedProfileData.address?.pinCode !== undefined ? updatedProfileData.address.pinCode : currentUser.address?.pinCode,
-      COUNTRY: updatedProfileData.address?.country !== undefined ? updatedProfileData.address.country : currentUser.address?.country,
-      // PASSWORD field is omitted here, assuming API allows update without it if not changing password
+      EMAILADDRESS: currentUser.email, 
+      PASSWORD: "", // Sending empty string for password as requested for non-password updates
+      PHONENUMBER: updatedProfileData.phoneNumber !== undefined ? updatedProfileData.phoneNumber : (currentUser.phoneNumber || ''),
+      PHYSICALADDRESS: updatedProfileData.address?.street !== undefined ? updatedProfileData.address.street : (currentUser.address?.street || ''),
+      CITY: updatedProfileData.address?.city !== undefined ? updatedProfileData.address.city : (currentUser.address?.city || ''),
+      POSTALCODE: updatedProfileData.address?.pinCode !== undefined ? updatedProfileData.address.pinCode : (currentUser.address?.pinCode || ''),
+      COUNTRY: updatedProfileData.address?.country !== undefined ? updatedProfileData.address.country : (currentUser.address?.country || ''),
     };
     
     try {
-      const response = await userSignupAPI(payload); // Using userSignupAPI (SP 128) for updates
+      const response = await userSignupAPI(payload); 
       if (response.data && response.data.message && response.data.message.toLowerCase().includes('document saved')) {
-        // Update local user state
         setUser(prevUser => {
           if (!prevUser) return null;
           const newUser = { 
             ...prevUser, 
             ...updatedProfileData,
-            // Ensure address is properly merged
-            address: updatedProfileData.address ? { ...prevUser.address, ...updatedProfileData.address } as UserAddress : prevUser.address,
+            name: `${payload.FIRSTNAME} ${payload.LASTNAME}`.trim(), // Ensure name is updated
+            address: payload.PHYSICALADDRESS || payload.CITY || payload.POSTALCODE || payload.COUNTRY ? {
+              street: payload.PHYSICALADDRESS || '',
+              city: payload.CITY || '',
+              pinCode: payload.POSTALCODE || '',
+              country: payload.COUNTRY || '',
+              addressType: updatedProfileData.address?.addressType || prevUser.address?.addressType || 'home',
+            } : undefined,
            };
           localStorage.setItem('sweetrolls-user', JSON.stringify(newUser));
           return newUser;
         });
-        // Toast is handled by the calling component for success
         setIsLoading(false);
         return true;
       } else {
@@ -221,7 +224,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoading(true);
 
-    // 1. Verify current password
     try {
       const verifyResponse = await fetchAuthenticatedUserAPI(user.email, currentPassword);
       if (!verifyResponse.data || verifyResponse.data.length === 0) {
@@ -237,12 +239,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    // 2. If current password is correct, update with new password using SP 128
     const payload: UserSignupPayload = {
       FIRSTNAME: user.firstName || '',
       LASTNAME: user.lastName || '',
       EMAILADDRESS: user.email,
-      PASSWORD: newPassword, // Send the new password
+      PASSWORD: newPassword, 
       COUNTRY: user.address?.country || '',
       CITY: user.address?.city || '',
       POSTALCODE: user.address?.pinCode || '',
@@ -251,11 +252,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     try {
-      const updateResponse = await userSignupAPI(payload); // Using SP 128 to update
+      const updateResponse = await userSignupAPI(payload); 
       if (updateResponse.data && updateResponse.data.message && updateResponse.data.message.toLowerCase().includes('document saved')) {
-        // Password changed successfully. Optionally, re-fetch user data or update locally if needed.
-        // For simplicity, we assume the session remains valid.
-        // Toast is handled by the calling component for success
+        toast({ title: 'Password Updated', description: 'Your password has been successfully changed.' });
         setIsLoading(false);
         return true;
       } else {
@@ -301,3 +300,5 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
+    
