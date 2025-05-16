@@ -6,7 +6,7 @@ import { createContext, useContext, useState, useMemo, useCallback, useEffect } 
 import type { User, UserAddress, AddressType, SignupData } from '@/types';
 import { sampleUser } from '@/lib/mock-data'; // For mock login
 import { useToast } from '@/hooks/use-toast';
-import { userSignupAPI } from '@/services/api'; // Import the new signup API service
+import { userSignupAPI } from '@/services/api'; 
 
 interface AuthContextType {
   user: User | null;
@@ -63,16 +63,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = useCallback(async (data: SignupData): Promise<boolean> => {
     setIsLoading(true);
     
-    const nameParts = data.name.split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-
     const apiPayload = {
-      FIRSTNAME: firstName,
-      LASTNAME: lastName,
+      FIRSTNAME: data.firstName,
+      LASTNAME: data.lastName,
       EMAILADDRESS: data.email,
-      PASSWORD: data.password, // Assuming password is sent; API might handle encryption
-      COUNTRY: data.country || '', // Ensure country is provided, default to empty string if optional
+      PASSWORD: data.password, 
+      COUNTRY: data.country || '', 
       CITY: data.addressCity || '',
       POSTALCODE: data.addressPinCode || '',
       PHYSICALADDRESS: data.addressStreet || '',
@@ -80,24 +76,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     try {
-      // console.log("Attempting signup with payload:", apiPayload);
       const response = await userSignupAPI(apiPayload);
-      // console.log("Signup API response:", response);
 
-      // Assuming a successful HTTP status (e.g., 200, 201) means user created.
-      // The actual success condition might depend on response.data content (e.g., response.data.message)
-      // For now, if the call doesn't throw an error, we consider it a success.
-      // Example: if (response.data && response.data.message === "Saved data.")
-
-      // Simulate creating a local user object and "logging them in"
+      // Assuming a successful HTTP status means user created.
+      // If API returns a specific success message, check response.data.message
+      
       const newMockUserId = `user-${Date.now()}`;
       const newUser: User = {
-        id: newMockUserId, // This would ideally come from the API response
-        name: data.name,
-        firstName: firstName,
-        lastName: lastName,
+        id: newMockUserId, 
+        firstName: data.firstName,
+        lastName: data.lastName,
+        name: `${data.firstName} ${data.lastName}`,
         email: data.email,
-        avatarUrl: `https://placehold.co/100x100.png?text=${firstName.charAt(0)}`, // Placeholder avatar
+        avatarUrl: `https://placehold.co/100x100.png?text=${data.firstName.charAt(0)}`,
         phoneNumber: data.phoneNumber,
         address: data.addressStreet && data.addressCity && data.addressPinCode && data.addressType && data.country ? {
           street: data.addressStreet,
@@ -142,6 +133,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ...(currentUser.address || {} as UserAddress), 
           ...updatedProfileData.address,
         };
+      }
+      
+      if(updatedProfileData.firstName || updatedProfileData.lastName) {
+        newUser.name = `${updatedProfileData.firstName || currentUser.firstName || ''} ${updatedProfileData.lastName || currentUser.lastName || ''}`.trim();
       }
       
       localStorage.setItem('sweetrolls-user', JSON.stringify(newUser));

@@ -54,7 +54,7 @@ export interface UserAddress {
 export interface User {
   id: string;
   email: string;
-  name: string; // Full name
+  name: string; // Full name, derived from firstName and lastName
   firstName?: string; 
   lastName?: string; 
   avatarUrl?: string;
@@ -65,9 +65,11 @@ export interface User {
 
 // Data collected for signup
 export interface SignupData {
-  name: string; 
+  firstName: string; 
+  lastName: string;
   email: string;
-  password?: string; // Made optional for the interface if API handles it differently
+  password?: string; 
+  confirmPassword?: string;
   phoneNumber?: string;
   addressStreet?: string; 
   addressCity?: string; 
