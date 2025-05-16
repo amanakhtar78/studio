@@ -47,17 +47,33 @@ export interface UserAddress {
   street: string;
   city: string;
   pinCode: string;
+  country?: string; // Added country to UserAddress as well for consistency
   addressType: AddressType;
 }
 
 export interface User {
   id: string;
   email: string;
-  name: string;
+  name: string; // Full name
+  firstName?: string; // Added for potential use
+  lastName?: string; // Added for potential use
   avatarUrl?: string;
   phoneNumber?: string;
   alternatePhoneNumber?: string;
   address?: UserAddress;
+}
+
+// Data collected during the multi-step signup process
+export interface SignupData {
+  name: string; // Full Name, will be split into FIRSTNAME, LASTNAME for API
+  email: string;
+  password?: string;
+  phoneNumber?: string;
+  addressStreet?: string; // Maps to PHYSICALADDRESS
+  addressCity?: string; // Maps to CITY
+  addressPinCode?: string; // Maps to POSTALCODE
+  country?: string; // Maps to COUNTRY
+  addressType?: AddressType; // For local User object, not directly sent to SP 128
 }
 // --- END AUTH and USER TYPES ---
 
@@ -197,3 +213,23 @@ export interface UpdateProductImagePathResponse {
   message: string; 
 }
 // --- END ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
+
+// --- START USER SIGNUP API (SP 128) TYPES ---
+export interface UserSignupPayload {
+  FIRSTNAME: string;
+  LASTNAME: string;
+  EMAILADDRESS: string;
+  PASSWORD?: string;
+  COUNTRY: string;
+  CITY: string;
+  POSTALCODE: string;
+  PHYSICALADDRESS: string;
+  PHONENUMBER?: string;
+}
+
+export interface UserSignupResponse {
+  message?: string; // Example: "Saved data." or error message
+  // Define other properties based on actual API response
+  // e.g. status_code, error_message
+}
+// --- END USER SIGNUP API (SP 128) TYPES ---

@@ -3,21 +3,10 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
-import type { User, UserAddress, AddressType } from '@/types';
+import type { User, UserAddress, AddressType, SignupData } from '@/types';
 import { sampleUser } from '@/lib/mock-data'; // For mock login
 import { useToast } from '@/hooks/use-toast';
-
-// Define the shape of signup data including new fields
-interface SignupData {
-  name: string;
-  email: string;
-  password?: string; // Password might not be needed if using OAuth, but good for traditional signup
-  phoneNumber?: string;
-  addressStreet?: string;
-  addressCity?: string;
-  addressPinCode?: string;
-  addressType?: AddressType;
-}
+import { userSignupAPI } from '@/services/api'; // Import the new signup API service
 
 interface AuthContextType {
   user: User | null;
@@ -25,7 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  signup: (data: SignupData) => Promise<boolean>; // Updated signup signature
+  signup: (data: SignupData) => Promise<boolean>;
   updateUserProfile: (updatedProfileData: Partial<User>) => Promise<boolean>;
 }
 
@@ -73,70 +62,84 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signup = useCallback(async (data: SignupData): Promise<boolean> => {
     setIsLoading(true);
-    console.log("Mock Signup attempt with data:", data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // In a real app, you would send this data to your backend to create a new user.
-    // Then, the backend would return the new user object or a session token.
-    // For this mock, we will simulate a successful signup by logging in the sampleUser
-    // IF the email provided is sampleUser's email. This allows testing the UI flow.
-    
-    if (data.email.toLowerCase() === sampleUser.email.toLowerCase()) {
-      // Simulate that signup was successful and the user is now logged in as sampleUser.
-      // We could potentially create a new user object here based on `data` and save it.
-      // For simplicity, we'll just use sampleUser.
-      setUser(sampleUser);
-      localStorage.setItem('sweetrolls-user', JSON.stringify(sampleUser));
-      toast({ title: 'Account Created!', description: `Welcome, ${data.name}! Please complete your profile if needed.` });
-      setIsLoading(false);
-      return true;
-    } else {
-      // Simulate a generic new user creation if email is not sampleUser's
+    const nameParts = data.name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+    const apiPayload = {
+      FIRSTNAME: firstName,
+      LASTNAME: lastName,
+      EMAILADDRESS: data.email,
+      PASSWORD: data.password, // Assuming password is sent; API might handle encryption
+      COUNTRY: data.country || '', // Ensure country is provided, default to empty string if optional
+      CITY: data.addressCity || '',
+      POSTALCODE: data.addressPinCode || '',
+      PHYSICALADDRESS: data.addressStreet || '',
+      PHONENUMBER: data.phoneNumber || '',
+    };
+
+    try {
+      // console.log("Attempting signup with payload:", apiPayload);
+      const response = await userSignupAPI(apiPayload);
+      // console.log("Signup API response:", response);
+
+      // Assuming a successful HTTP status (e.g., 200, 201) means user created.
+      // The actual success condition might depend on response.data content (e.g., response.data.message)
+      // For now, if the call doesn't throw an error, we consider it a success.
+      // Example: if (response.data && response.data.message === "Saved data.")
+
+      // Simulate creating a local user object and "logging them in"
       const newMockUserId = `user-${Date.now()}`;
-      const newMockUser: User = {
-          id: newMockUserId,
-          name: data.name,
-          email: data.email,
-          avatarUrl: `https://picsum.photos/seed/${newMockUserId}/100/100`,
-          phoneNumber: data.phoneNumber,
-          address: data.addressStreet && data.addressCity && data.addressPinCode && data.addressType ? {
-              street: data.addressStreet,
-              city: data.addressCity,
-              pinCode: data.addressPinCode,
-              addressType: data.addressType,
-          } : undefined,
+      const newUser: User = {
+        id: newMockUserId, // This would ideally come from the API response
+        name: data.name,
+        firstName: firstName,
+        lastName: lastName,
+        email: data.email,
+        avatarUrl: `https://placehold.co/100x100.png?text=${firstName.charAt(0)}`, // Placeholder avatar
+        phoneNumber: data.phoneNumber,
+        address: data.addressStreet && data.addressCity && data.addressPinCode && data.addressType && data.country ? {
+          street: data.addressStreet,
+          city: data.addressCity,
+          pinCode: data.addressPinCode,
+          country: data.country,
+          addressType: data.addressType,
+        } : undefined,
       };
-      setUser(newMockUser);
-      localStorage.setItem('sweetrolls-user', JSON.stringify(newMockUser));
-      toast({ title: 'Account Created!', description: `Welcome, ${newMockUser.name}!` });
+      setUser(newUser);
+      localStorage.setItem('sweetrolls-user', JSON.stringify(newUser));
+      toast({ title: 'Account Created!', description: `Welcome, ${newUser.name}! Your account has been successfully created.` });
       setIsLoading(false);
       return true;
+
+    } catch (error: any) {
+      console.error("Signup API error:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Could not create account. Please try again.';
+      toast({ title: 'Signup Failed', description: errorMessage, variant: 'destructive' });
+      setIsLoading(false);
+      return false;
     }
-    // toast({ title: 'Signup Failed', description: 'Could not create account (mock error).', variant: 'destructive' });
-    // setIsLoading(false);
-    // return false;
   }, [toast]);
 
   const updateUserProfile = useCallback(async (updatedProfileData: Partial<User>): Promise<boolean> => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500)); 
 
     setUser(currentUser => {
       if (!currentUser) return null;
       
       const newUser = { ...currentUser };
 
-      // Merge top-level fields
       for (const key in updatedProfileData) {
         if (key !== 'address' && updatedProfileData.hasOwnProperty(key)) {
           (newUser as any)[key] = (updatedProfileData as any)[key];
         }
       }
       
-      // Deep merge address
       if (updatedProfileData.address) {
         newUser.address = {
-          ...(currentUser.address || {} as UserAddress), // Ensure address object exists
+          ...(currentUser.address || {} as UserAddress), 
           ...updatedProfileData.address,
         };
       }
