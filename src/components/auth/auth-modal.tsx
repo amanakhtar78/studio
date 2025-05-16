@@ -38,11 +38,11 @@ type SignupCredentialFormData = z.infer<typeof signupCredentialSchema>;
 
 const signupAddressSchema = z.object({
   phoneNumber: z.string().regex(/^\+?[0-9]{10,14}$/, { message: "Invalid phone number format. e.g. +254712345678" }).optional().or(z.literal('')),
-  addressStreet: z.string().min(5, { message: "Street address must be at least 5 characters." }),
-  addressCity: z.string().min(2, { message: "City must be at least 2 characters." }),
-  addressPinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code." }),
-  country: z.string().min(2, { message: "Country must be at least 2 characters." }),
-  addressType: z.enum(['home', 'office', 'other'], { required_error: "Please select an address type." }),
+  addressStreet: z.string().min(5, { message: "Street address must be at least 5 characters." }), // Maps to PHYSICALADDRESS
+  addressCity: z.string().min(2, { message: "City must be at least 2 characters." }), // Maps to CITY
+  addressPinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code." }), // Maps to POSTALCODE
+  country: z.string().min(2, { message: "Country must be at least 2 characters." }), // Maps to COUNTRY
+  addressType: z.enum(['home', 'office', 'other'], { required_error: "Please select an address type." }), // For local User object
 });
 type SignupAddressFormData = z.infer<typeof signupAddressSchema>;
 
@@ -277,5 +277,7 @@ export function AuthModal() {
     </Dialog>
   );
 }
+
+    
 
     
