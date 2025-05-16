@@ -3,8 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
-import type { User, UserAddress, AddressType, SignupData, ApiUserDetail } from '@/types';
-// import { sampleUser } from '@/lib/mock-data'; // No longer using sampleUser for login
+import type { User, UserAddress, SignupData, ApiUserDetail, UserSignupPayload } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { userSignupAPI, checkUserExistsAPI, fetchAuthenticatedUserAPI } from '@/services/api'; 
 
@@ -16,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   signup: (data: SignupData) => Promise<boolean>;
   updateUserProfile: (updatedProfileData: Partial<User>) => Promise<boolean>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,30 +40,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
+  const mapApiUserToUser = (apiUser: ApiUserDetail): User => {
+    return {
+      id: apiUser.EMAILADDRESS, 
+      email: apiUser.EMAILADDRESS,
+      firstName: apiUser.FIRSTNAME,
+      lastName: apiUser.LASTNAME,
+      name: `${apiUser.FIRSTNAME || ''} ${apiUser.LASTNAME || ''}`.trim(),
+      avatarUrl: `https://placehold.co/100x100.png?text=${(apiUser.FIRSTNAME || 'U').charAt(0)}${(apiUser.LASTNAME || '').charAt(0)}`.toUpperCase(),
+      phoneNumber: apiUser.PHONENUMBER,
+      address: (apiUser.PHYSICALADDRESS && apiUser.CITY && apiUser.POSTALCODE) ? {
+        street: apiUser.PHYSICALADDRESS,
+        city: apiUser.CITY,
+        pinCode: apiUser.POSTALCODE,
+        country: apiUser.COUNTRY || '', // Assuming country might be optional from API
+        addressType: 'home', // Defaulting address type
+      } : undefined,
+    };
+  };
+
   const login = useCallback(async (email: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const response = await fetchAuthenticatedUserAPI(email, pass);
       if (response.data && response.data.length > 0) {
-        const apiUser = response.data[0]; // Take the first user if multiple (should ideally be unique by email/pass)
-        
-        const loggedInUser: User = {
-          id: apiUser.EMAILADDRESS, // Using email as ID, ensure this is unique and suitable for your app
-          email: apiUser.EMAILADDRESS,
-          firstName: apiUser.FIRSTNAME,
-          lastName: apiUser.LASTNAME,
-          name: `${apiUser.FIRSTNAME || ''} ${apiUser.LASTNAME || ''}`.trim(),
-          avatarUrl: `https://placehold.co/100x100.png?text=${(apiUser.FIRSTNAME || 'U').charAt(0)}${(apiUser.LASTNAME || '').charAt(0)}`.toUpperCase(),
-          phoneNumber: apiUser.PHONENUMBER,
-          address: (apiUser.PHYSICALADDRESS && apiUser.CITY && apiUser.POSTALCODE && apiUser.COUNTRY) ? {
-            street: apiUser.PHYSICALADDRESS,
-            city: apiUser.CITY,
-            pinCode: apiUser.POSTALCODE,
-            country: apiUser.COUNTRY,
-            addressType: 'home', // Defaulting address type as API doesn't provide it
-          } : undefined,
-        };
-
+        const apiUser = response.data[0];
+        const loggedInUser = mapApiUserToUser(apiUser);
         setUser(loggedInUser);
         localStorage.setItem('sweetrolls-user', JSON.stringify(loggedInUser));
         toast({ title: 'Login Successful', description: `Welcome back, ${loggedInUser.name}!` });
@@ -91,8 +93,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signup = useCallback(async (data: SignupData): Promise<boolean> => {
     setIsLoading(true);
-
-    // 1. Check if user already exists
     try {
       const existingUserResponse = await checkUserExistsAPI(data.email);
       if (existingUserResponse.data && existingUserResponse.data.length > 0) {
@@ -101,21 +101,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
     } catch (error: any) {
-      console.error("Check user exists API error:", error);
-      // If checking user existence fails, we might still proceed or show an error
-      // For now, let's show an error and stop.
       const checkErrorMessage = error.response?.data?.message || error.message || 'Could not verify email. Please try again.';
       toast({ title: 'Signup Error', description: checkErrorMessage, variant: 'destructive' });
       setIsLoading(false);
       return false;
     }
 
-    // 2. If user does not exist, proceed with signup (SP 128)
-    const apiPayload = {
+    const apiPayload: UserSignupPayload = {
       FIRSTNAME: data.firstName,
       LASTNAME: data.lastName,
       EMAILADDRESS: data.email,
-      PASSWORD: data.password, // API SP 128 might take this
+      PASSWORD: data.password, // Signup always requires password
       COUNTRY: data.country || '', 
       CITY: data.addressCity || '',
       POSTALCODE: data.addressPinCode || '',
@@ -125,10 +121,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const response = await userSignupAPI(apiPayload);
-      // Assuming a successful HTTP status and a specific message like "Document Saved" means user created.
       if (response.data && response.data.message && response.data.message.toLowerCase().includes('document saved')) {
         const newUser: User = {
-          id: data.email, // Using email as ID for now
+          id: data.email,
           firstName: data.firstName,
           lastName: data.lastName,
           name: `${data.firstName} ${data.lastName}`,
@@ -149,7 +144,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
         return true;
       } else {
-        // Handle cases where API call was successful but didn't result in user creation as expected
         const signupErrorMessage = response.data?.message || 'Signup was not successful. Please try again.';
         toast({ title: 'Signup Failed', description: signupErrorMessage, variant: 'destructive' });
         setIsLoading(false);
@@ -165,43 +159,120 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [toast]);
 
   const updateUserProfile = useCallback(async (updatedProfileData: Partial<User>): Promise<boolean> => {
+    if (!user) {
+      toast({ title: 'Error', description: 'You must be logged in to update your profile.', variant: 'destructive' });
+      return false;
+    }
     setIsLoading(true);
-    // Mock API call for profile update
-    await new Promise(resolve => setTimeout(resolve, 500)); 
 
-    setUser(currentUser => {
-      if (!currentUser) return null;
-      
-      const newUser = { ...currentUser };
+    const currentUser = user; // Get current user from state
 
-      // Directly update top-level fields, except 'address'
-      for (const key in updatedProfileData) {
-        if (key !== 'address' && updatedProfileData.hasOwnProperty(key)) {
-          (newUser as any)[key] = (updatedProfileData as any)[key];
-        }
+    // Prepare payload for SP 128 (similar to signup but without password if not changing)
+    const payload: UserSignupPayload = {
+      FIRSTNAME: updatedProfileData.firstName || currentUser.firstName || '',
+      LASTNAME: updatedProfileData.lastName || currentUser.lastName || '',
+      EMAILADDRESS: currentUser.email, // Email is the key, should not change
+      PHONENUMBER: updatedProfileData.phoneNumber !== undefined ? updatedProfileData.phoneNumber : currentUser.phoneNumber,
+      PHYSICALADDRESS: updatedProfileData.address?.street !== undefined ? updatedProfileData.address.street : currentUser.address?.street,
+      CITY: updatedProfileData.address?.city !== undefined ? updatedProfileData.address.city : currentUser.address?.city,
+      POSTALCODE: updatedProfileData.address?.pinCode !== undefined ? updatedProfileData.address.pinCode : currentUser.address?.pinCode,
+      COUNTRY: updatedProfileData.address?.country !== undefined ? updatedProfileData.address.country : currentUser.address?.country,
+      // PASSWORD field is omitted here, assuming API allows update without it if not changing password
+    };
+    
+    try {
+      const response = await userSignupAPI(payload); // Using userSignupAPI (SP 128) for updates
+      if (response.data && response.data.message && response.data.message.toLowerCase().includes('document saved')) {
+        // Update local user state
+        setUser(prevUser => {
+          if (!prevUser) return null;
+          const newUser = { 
+            ...prevUser, 
+            ...updatedProfileData,
+            // Ensure address is properly merged
+            address: updatedProfileData.address ? { ...prevUser.address, ...updatedProfileData.address } as UserAddress : prevUser.address,
+           };
+          localStorage.setItem('sweetrolls-user', JSON.stringify(newUser));
+          return newUser;
+        });
+        // Toast is handled by the calling component for success
+        setIsLoading(false);
+        return true;
+      } else {
+        const updateErrorMessage = response.data?.message || 'Profile update was not successful. Please try again.';
+        toast({ title: 'Update Failed', description: updateErrorMessage, variant: 'destructive' });
+        setIsLoading(false);
+        return false;
       }
-      
-      // Merge address details if provided
-      if (updatedProfileData.address) {
-        newUser.address = {
-          ...(currentUser.address || {} as UserAddress), // Ensure current address is an object
-          ...updatedProfileData.address,
-        };
-      }
-      
-      // Reconstruct name if firstName or lastName is updated
-      if(updatedProfileData.firstName || updatedProfileData.lastName) {
-        newUser.name = `${updatedProfileData.firstName || currentUser.firstName || ''} ${updatedProfileData.lastName || currentUser.lastName || ''}`.trim();
-      }
-      
-      localStorage.setItem('sweetrolls-user', JSON.stringify(newUser));
-      return newUser;
-    });
+    } catch (error: any) {
+      console.error("Update profile API error:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Could not update profile. Please try again.';
+      toast({ title: 'Update Failed', description: errorMessage, variant: 'destructive' });
+      setIsLoading(false);
+      return false;
+    }
+  }, [user, toast]);
 
-    toast({ title: 'Profile Updated', description: 'Your profile information has been saved.' });
-    setIsLoading(false);
-    return true;
-  }, [toast]);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    if (!user) {
+      toast({ title: 'Error', description: 'You must be logged in to change your password.', variant: 'destructive' });
+      return false;
+    }
+    setIsLoading(true);
+
+    // 1. Verify current password
+    try {
+      const verifyResponse = await fetchAuthenticatedUserAPI(user.email, currentPassword);
+      if (!verifyResponse.data || verifyResponse.data.length === 0) {
+        toast({ title: 'Password Change Failed', description: 'Incorrect current password.', variant: 'destructive' });
+        setIsLoading(false);
+        return false;
+      }
+    } catch (error: any) {
+      console.error("Verify current password API error:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Could not verify current password.';
+      toast({ title: 'Password Change Failed', description: errorMessage, variant: 'destructive' });
+      setIsLoading(false);
+      return false;
+    }
+
+    // 2. If current password is correct, update with new password using SP 128
+    const payload: UserSignupPayload = {
+      FIRSTNAME: user.firstName || '',
+      LASTNAME: user.lastName || '',
+      EMAILADDRESS: user.email,
+      PASSWORD: newPassword, // Send the new password
+      COUNTRY: user.address?.country || '',
+      CITY: user.address?.city || '',
+      POSTALCODE: user.address?.pinCode || '',
+      PHYSICALADDRESS: user.address?.street || '',
+      PHONENUMBER: user.phoneNumber || '',
+    };
+
+    try {
+      const updateResponse = await userSignupAPI(payload); // Using SP 128 to update
+      if (updateResponse.data && updateResponse.data.message && updateResponse.data.message.toLowerCase().includes('document saved')) {
+        // Password changed successfully. Optionally, re-fetch user data or update locally if needed.
+        // For simplicity, we assume the session remains valid.
+        // Toast is handled by the calling component for success
+        setIsLoading(false);
+        return true;
+      } else {
+        const updateErrorMessage = updateResponse.data?.message || 'Password update was not successful. Please try again.';
+        toast({ title: 'Password Change Failed', description: updateErrorMessage, variant: 'destructive' });
+        setIsLoading(false);
+        return false;
+      }
+    } catch (error: any) {
+      console.error("Change password API error (SP 128):", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Could not change password.';
+      toast({ title: 'Password Change Failed', description: errorMessage, variant: 'destructive' });
+      setIsLoading(false);
+      return false;
+    }
+  }, [user, toast]);
+
 
   const isAuthenticated = !!user;
 
@@ -213,7 +284,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     signup,
     updateUserProfile,
-  }), [user, isAuthenticated, isLoading, login, logout, signup, updateUserProfile]);
+    changePassword,
+  }), [user, isAuthenticated, isLoading, login, logout, signup, updateUserProfile, changePassword]);
 
   return (
     <AuthContext.Provider value={value}>
