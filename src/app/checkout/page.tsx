@@ -207,6 +207,8 @@ export default function CheckoutPage() {
       DELIVERYPROVIDED: 0,
       DELIVERYROUTE: 0,
       DELIVERYCHARGES: 0,
+      SUCCESS_STATUS: '',
+      ERROR_STATUS: '',
     };
 
     try {
@@ -236,7 +238,9 @@ export default function CheckoutPage() {
           ITEMAMOUNT: lineItemAmountInclVat, // Total amount for this line item, including VAT
           DIVISION: 'NAIROBI',
           CREATEDBY: user.email.split("@")[0].toUpperCase(),
-          CREATEDDATE: datePass,
+          CREATEDDATE: datePass, 
+          SUCCESS_STATUS: '',
+          ERROR_STATUS: '',
         };
         const itemResponse = await saveSalesEnquiryItemAPI(itemPayload);
         if (!itemResponse.data || !itemResponse.data.message.toLowerCase().includes('document saved')) {
@@ -246,7 +250,7 @@ export default function CheckoutPage() {
 
       toast({ title: 'Order Placed Successfully!', description: `Your order #${newSalesEnquiryNo} is confirmed.`, variant: 'default' });
       clearCart();
-      router.push(`/my-orders/${newSalesEnquiryNo}?new=true`);
+      router.push(`/`);
 
     } catch (error: any) {
       console.error("Error placing order:", error);

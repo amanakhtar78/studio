@@ -308,6 +308,8 @@ export interface SalesEnquiryHeaderPayload {
   DELIVERYPROVIDED: number; // 0
   DELIVERYROUTE: number; // 0
   DELIVERYCHARGES: number; // 0
+  SUCCESS_STATUS: string,
+  ERROR_STATUS: string,
 }
 
 export interface SalesEnquiryItemPayload {
@@ -325,6 +327,8 @@ export interface SalesEnquiryItemPayload {
   DIVISION: string; // "NAIROBI"
   CREATEDBY: string; // user.email.split("@")[0].toUpperCase()
   CREATEDDATE: string; // YYYY-MM-DD
+  SUCCESS_STATUS: string,
+  ERROR_STATUS: string,
 }
 
 export interface SalesEnquiryResponse {
