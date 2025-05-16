@@ -47,7 +47,7 @@ export interface UserAddress {
   street: string;
   city: string;
   pinCode: string;
-  country?: string; // Added country to UserAddress as well for consistency
+  country?: string; 
   addressType: AddressType;
 }
 
@@ -55,25 +55,25 @@ export interface User {
   id: string;
   email: string;
   name: string; // Full name
-  firstName?: string; // Added for potential use
-  lastName?: string; // Added for potential use
+  firstName?: string; 
+  lastName?: string; 
   avatarUrl?: string;
   phoneNumber?: string;
   alternatePhoneNumber?: string;
   address?: UserAddress;
 }
 
-// Data collected during the multi-step signup process
+// Data collected for signup
 export interface SignupData {
-  name: string; // Full Name, will be split into FIRSTNAME, LASTNAME for API
+  name: string; 
   email: string;
-  password?: string;
+  password?: string; // Made optional for the interface if API handles it differently
   phoneNumber?: string;
-  addressStreet?: string; // Maps to PHYSICALADDRESS
-  addressCity?: string; // Maps to CITY
-  addressPinCode?: string; // Maps to POSTALCODE
-  country?: string; // Maps to COUNTRY
-  addressType?: AddressType; // For local User object, not directly sent to SP 128
+  addressStreet?: string; 
+  addressCity?: string; 
+  addressPinCode?: string; 
+  country?: string; 
+  addressType?: AddressType; 
 }
 // --- END AUTH and USER TYPES ---
 
@@ -93,11 +93,11 @@ export const DELIVERY_ORDER_STATUS_STEPS: OrderStatusDelivery[] = ["Order Placed
 
 
 export interface OrderItemDetail {
-  productId: string; // Align with Product.id (ITEM CODE)
-  name: string; // Product title
+  productId: string; 
+  name: string; 
   quantity: number;
-  price: number; // Price at the time of order
-  imageUrl?: string | null; // Product image
+  price: number; 
+  imageUrl?: string | null; 
   dataAiHint?: string;
 }
 
@@ -117,7 +117,7 @@ export interface Order {
 
 
 export interface CartItem {
-  productId: string; // Corresponds to Product.id (ITEM CODE)
+  productId: string; 
   quantity: number;
 }
 
@@ -172,15 +172,16 @@ export interface AdminAuthState {
 // --- END ADMIN AUTH TYPES ---
 
 // --- START ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
-// This is the raw type from the API viewname=792
 export interface AdminProduct {
   "ITEM CODE": string;
   "PART NO": string;
   "ITEM NAME": string;
-  "ITEM DESCRIPTION": string;
   "ITEM CATEGORY": string;
   "ITEM SUB CATEGORY": string;
   "ITEM CLASSIFICATION": string;
+  "IMAGEPATH": string | null;
+  // Add other fields from your API response structure as needed
+  "ITEM DESCRIPTION": string; 
   "ITEM BASE UOM": string;
   "ITEM ALT UOM": string;
   "ITEM CONV FACTOR": number;
@@ -191,7 +192,6 @@ export interface AdminProduct {
   "LATEST COST PRICE": number | null;
   "SELLINGPRICE": number | null;
   "RATING": number | null;
-  "IMAGEPATH": string | null;
 }
 
 export type ImageFilterStatus = "all" | "uploaded" | "not-uploaded";
@@ -228,8 +228,6 @@ export interface UserSignupPayload {
 }
 
 export interface UserSignupResponse {
-  message?: string; // Example: "Saved data." or error message
-  // Define other properties based on actual API response
-  // e.g. status_code, error_message
+  message?: string; 
 }
 // --- END USER SIGNUP API (SP 128) TYPES ---
