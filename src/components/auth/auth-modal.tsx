@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useForm, type SubmitHandler, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { AddressType, SignupData } from '@/types';
 import {
   Select,
@@ -37,14 +37,14 @@ const signupFormSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string().min(6, {message: "Confirm password must be at least 6 characters."}),
   phoneNumber: z.string().regex(/^\+?[0-9]{10,14}$/, { message: "Invalid phone number format. e.g. +254712345678" }).optional().or(z.literal('')),
-  addressStreet: z.string().min(5, { message: "Street address must be at least 5 characters." }),
-  addressCity: z.string().min(2, { message: "City must be at least 2 characters." }),
-  addressPinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code." }),
-  country: z.string().min(2, { message: "Country must be at least 2 characters." }),
-  addressType: z.enum(['home', 'office', 'other'], { required_error: "Please select an address type." }),
+  addressStreet: z.string().min(5, { message: "Street address must be at least 5 characters." }).optional().or(z.literal('')),
+  addressCity: z.string().min(2, { message: "City must be at least 2 characters." }).optional().or(z.literal('')),
+  addressPinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code." }).optional().or(z.literal('')),
+  country: z.string().min(2, { message: "Country must be at least 2 characters." }).optional().or(z.literal('')),
+  addressType: z.enum(['home', 'office', 'other'], { required_error: "Please select an address type." }).optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
-  path: ["confirmPassword"], // path of error
+  path: ["confirmPassword"], 
 });
 type SignupFormData = z.infer<typeof signupFormSchema>;
 
@@ -57,6 +57,9 @@ export function AuthModal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmAlertOpen, setIsConfirmAlertOpen] = useState(false);
   const [pendingSignupData, setPendingSignupData] = useState<SignupFormData | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 
   const loginForm = useForm<LoginFormData>({
@@ -97,13 +100,13 @@ export function AuthModal() {
       lastName: pendingSignupData.lastName,
       email: pendingSignupData.email,
       password: pendingSignupData.password,
-      // confirmPassword is not sent to API
-      phoneNumber: pendingSignupData.phoneNumber,
-      addressStreet: pendingSignupData.addressStreet,
-      addressCity: pendingSignupData.addressCity,
-      addressPinCode: pendingSignupData.addressPinCode,
-      country: pendingSignupData.country,
-      addressType: pendingSignupData.addressType,
+      // confirmPassword is not sent to API but validated client-side
+      phoneNumber: pendingSignupData.phoneNumber || undefined, // Ensure optional fields are handled
+      addressStreet: pendingSignupData.addressStreet || undefined,
+      addressCity: pendingSignupData.addressCity || undefined,
+      addressPinCode: pendingSignupData.addressPinCode || undefined,
+      country: pendingSignupData.country || undefined,
+      addressType: pendingSignupData.addressType || undefined,
     };
 
     const success = await signup(signupPayload);
@@ -124,6 +127,9 @@ export function AuthModal() {
     signupForm.clearErrors();
     setIsConfirmAlertOpen(false);
     setPendingSignupData(null);
+    setShowPassword(false);
+    setShowSignupPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const currentFormLoading = isSubmitting || authIsLoading;
@@ -158,7 +164,13 @@ export function AuthModal() {
               </div>
               <div>
                 <Label htmlFor="login-password" className="text-xs">Password</Label>
-                <Input id="login-password" type="password" placeholder="••••••••" {...loginForm.register('password')} className="mt-0.5 h-9 text-sm" />
+                <div className="relative">
+                  <Input id="login-password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...loginForm.register('password')} className="mt-0.5 h-9 text-sm pr-10" />
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
+                  </Button>
+                </div>
                 {loginForm.formState.errors.password && <p className="text-xs text-destructive mt-0.5">{loginForm.formState.errors.password.message}</p>}
               </div>
               <Button type="submit" size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm" disabled={currentFormLoading}>
@@ -189,19 +201,31 @@ export function AuthModal() {
               </div>
               <div>
                 <Label htmlFor="signup-password" className="text-xs">Password</Label>
-                <Input id="signup-password" type="password" placeholder="Choose a strong password" {...signupForm.register('password')} className="mt-0.5 h-9 text-sm" />
+                <div className="relative">
+                  <Input id="signup-password" type={showSignupPassword ? 'text' : 'password'} placeholder="Choose a strong password" {...signupForm.register('password')} className="mt-0.5 h-9 text-sm pr-10" />
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowSignupPassword(!showSignupPassword)}>
+                    {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                     <span className="sr-only">{showSignupPassword ? 'Hide password' : 'Show password'}</span>
+                  </Button>
+                </div>
                 {signupForm.formState.errors.password && <p className="text-xs text-destructive mt-0.5">{signupForm.formState.errors.password.message}</p>}
               </div>
               <div>
                 <Label htmlFor="signup-confirmPassword" className="text-xs">Confirm Password</Label>
-                <Input id="signup-confirmPassword" type="password" placeholder="Re-enter your password" {...signupForm.register('confirmPassword')} className="mt-0.5 h-9 text-sm" />
+                 <div className="relative">
+                  <Input id="signup-confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="Re-enter your password" {...signupForm.register('confirmPassword')} className="mt-0.5 h-9 text-sm pr-10" />
+                   <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showConfirmPassword ? 'Hide password' : 'Show password'}</span>
+                  </Button>
+                </div>
                 {signupForm.formState.errors.confirmPassword && <p className="text-xs text-destructive mt-0.5">{signupForm.formState.errors.confirmPassword.message}</p>}
               </div>
               
-              <h4 className="text-sm font-medium text-muted-foreground pt-2 border-t mt-4">Contact & Address</h4>
+              <h4 className="text-sm font-medium text-muted-foreground pt-2 border-t mt-4">Contact & Address (Optional)</h4>
               
               <div>
-                <Label htmlFor="signup-phone" className="text-xs">Phone Number (Optional)</Label>
+                <Label htmlFor="signup-phone" className="text-xs">Phone Number</Label>
                 <Input id="signup-phone" type="tel" placeholder="+254712345678" {...signupForm.register('phoneNumber')} className="mt-0.5 h-9 text-sm" />
                 {signupForm.formState.errors.phoneNumber && <p className="text-xs text-destructive mt-0.5">{signupForm.formState.errors.phoneNumber.message}</p>}
               </div>
@@ -260,9 +284,11 @@ export function AuthModal() {
         </Tabs>
         
         <DialogFooter className="mt-3">
-           <p className="text-[10px] text-muted-foreground text-center w-full">
-             For demo: use email <strong className="text-foreground">test@gmail.com</strong> and password <strong className="text-foreground">test</strong> to login.
-           </p>
+           {activeTab === 'login' && (
+            <p className="text-[10px] text-muted-foreground text-center w-full">
+                For demo: use email <strong className="text-foreground">test78@gmail.com</strong> and password <strong className="text-foreground">test78</strong> to login.
+            </p>
+           )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

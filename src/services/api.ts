@@ -1,6 +1,6 @@
 
 'use client';
-import type { AdminProduct, Product, UserSignupPayload, UserSignupResponse } from '@/types';
+import type { AdminProduct, Product, UserSignupPayload, UserSignupResponse, ApiUserDetail } from '@/types';
 import axios from 'axios';
 
 // This apiClient is for public-facing API calls
@@ -23,11 +23,22 @@ export const fetchProductsAPI = () => {
 
 // API for User Signup (SP 128)
 export const userSignupAPI = (payload: UserSignupPayload) => {
-  // Per user request, using the same hardcoded token for signup.
-  // This is unusual for a public signup.
   return apiClient.post<UserSignupResponse>(
     'https://devapi.tech23.net/global/globalSPHandler?spname=128', 
     payload,
+    {
+      headers: {
+        'session-token': HARDCODED_SESSION_TOKEN, // Using hardcoded token as requested
+        'Content-Type': 'application/json',
+      }
+    }
+  );
+};
+
+// API to check if user exists (View 610 by Email)
+export const checkUserExistsAPI = (email: string) => {
+  return apiClient.get<ApiUserDetail[]>( // Expecting an array of users, even if it's just one or zero
+    `https://devapi.tech23.net/global/globalViewHandler?viewname=610&EMAILADDRESS=${encodeURIComponent(email)}`,
     {
       headers: {
         'session-token': HARDCODED_SESSION_TOKEN,
@@ -35,5 +46,19 @@ export const userSignupAPI = (payload: UserSignupPayload) => {
     }
   );
 };
+
+// API to fetch authenticated user details (View 610 by Email and Password)
+export const fetchAuthenticatedUserAPI = (email: string, password?: string) => { // Password made optional as it might not always be sent
+  let url = `https://devapi.tech23.net/global/globalViewHandler?viewname=610&EMAILADDRESS=${encodeURIComponent(email)}`;
+  if (password) {
+    url += `&PASSWORD=${encodeURIComponent(password)}`;
+  }
+  return apiClient.get<ApiUserDetail[]>(url, { // Expecting an array of users
+    headers: {
+      'session-token': HARDCODED_SESSION_TOKEN,
+    }
+  });
+};
+
 
 export default apiClient;

@@ -52,12 +52,12 @@ export interface UserAddress {
 }
 
 export interface User {
-  id: string;
+  id: string; // Typically the user's unique ID from your auth system, e.g., email or a specific user ID
   email: string;
   name: string; // Full name, derived from firstName and lastName
   firstName?: string; 
   lastName?: string; 
-  avatarUrl?: string;
+  avatarUrl?: string; // Can be a placeholder generated from initials if no image
   phoneNumber?: string;
   alternatePhoneNumber?: string;
   address?: UserAddress;
@@ -221,7 +221,7 @@ export interface UserSignupPayload {
   FIRSTNAME: string;
   LASTNAME: string;
   EMAILADDRESS: string;
-  PASSWORD?: string;
+  PASSWORD?: string; // API seems to take it
   COUNTRY: string;
   CITY: string;
   POSTALCODE: string;
@@ -230,6 +230,26 @@ export interface UserSignupPayload {
 }
 
 export interface UserSignupResponse {
-  message?: string; 
+  message?: string; // e.g., "Document Saved"
+  // Potentially other fields if the API returns more details on success/error
 }
 // --- END USER SIGNUP API (SP 128) TYPES ---
+
+// --- START API USER DETAIL (VIEWNAME 610) TYPE ---
+export interface ApiUserDetail {
+  EMAILADDRESS: string;
+  PASSWORD?: string; // Password might not always be returned, or might be hashed
+  FIRSTNAME: string;
+  LASTNAME: string;
+  CITY: string;
+  CONFIRMED?: boolean;
+  CONFIRMEDDATETIME?: string | null;
+  COUNTRY: string;
+  PHONENUMBER?: string;
+  PHYSICALADDRESS?: string;
+  POSTALCODE?: string;
+  REGISTRATIONDATE?: string;
+  REGISTRATIONTIME?: string;
+  // Add any other fields returned by viewname=610
+}
+// --- END API USER DETAIL (VIEWNAME 610) TYPE ---

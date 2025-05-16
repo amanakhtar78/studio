@@ -22,10 +22,6 @@ import { useAuth } from '@/context/auth-context';
 import { useAuthModal } from '@/hooks/use-auth-modal';
 import { useRouter } from 'next/navigation';
 
-// Removed useSelector and RootState as dynamic categories are removed from navbar
-// import { useSelector } from 'react-redux';
-// import type { RootState } from '@/store/store';
-// import type { Category } from '@/types';
 
 interface NavbarProps {
   theme: 'light' | 'dark';
@@ -39,9 +35,6 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
   const { openModal: openAuthModal } = useAuthModal();
   const router = useRouter();
 
-  // Categories are no longer fetched or used directly in the navbar for links
-  // const categoriesFromStore = useSelector((state: RootState) => state.categories.items);
-  // const categoryStatus = useSelector((state: RootState) => state.categories.status);
 
   useEffect(() => {
     setIsMounted(true);
@@ -70,7 +63,6 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
 
   const navLinks = (closeSheet?: () => void) => (
     <>
-      {/* Dynamic category links removed */}
       <Button
         variant="ghost"
         size="sm" 
@@ -101,8 +93,6 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
     );
   }
   
-  // const currentCategories = categoryStatus === 'succeeded' ? categoriesFromStore : [];
-
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -142,7 +132,9 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0"> 
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatarUrl} alt={user.name} />
-                    <AvatarFallback className="text-xs">{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</AvatarFallback> 
+                    <AvatarFallback className="text-xs">
+                       {(user.firstName ? user.firstName.charAt(0) : '') + (user.lastName ? user.lastName.charAt(0) : '') || 'U'}
+                    </AvatarFallback> 
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -233,4 +225,3 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
     </header>
   );
 }
-
