@@ -162,7 +162,7 @@ export default function CheckoutPage() {
 
 
   const handlePlaceOrder = async (data: CheckoutFormData) => {
-    if (!user) {
+    if (!user || !user.email) { // Guard clause for user and user.email
       toast({ title: 'Authentication Error', description: 'Please log in to place an order.', variant: 'destructive' });
       return;
     }
@@ -214,13 +214,13 @@ export default function CheckoutPage() {
       if (!headerResponse.data || !headerResponse.data.message.toLowerCase().includes('document saved')) {
         throw new Error(headerResponse.data.message || 'Failed to save order header.');
       }
-      toast({ title: 'Order Header Saved', description: 'Processing items...', variant: 'default' });
+      // toast({ title: 'Order Header Saved', description: 'Processing items...', variant: 'default' }); // Can be a bit noisy
 
       for (let i = 0; i < cartItemsWithDetails.length; i++) {
         const item = cartItemsWithDetails[i];
-        const itemRateExclVat = item.price * item.cartQuantity;
-        const itemVat = item.ITEM_VATABLE?.toUpperCase() === 'YES' ? itemRateExclVat * 0.16 : 0;
-        const itemAmountInclVat = itemRateExclVat + itemVat;
+        const lineItemRateExclVat = item.price * item.cartQuantity; // Correct calculation for line item rate
+        const lineItemVat = item.ITEM_VATABLE?.toUpperCase() === 'YES' ? lineItemRateExclVat * 0.16 : 0;
+        const lineItemAmountInclVat = lineItemRateExclVat + lineItemVat;
 
         const itemPayload: SalesEnquiryItemPayload = {
           SALESENQUIRYNO: Number(newSalesEnquiryNo),
@@ -230,10 +230,10 @@ export default function CheckoutPage() {
           ITEMDESCRIPTION: item.title,
           UOM: item.ITEM_BASE_UOM || "PCS",
           ITEMQTY: item.cartQuantity,
-          ITEMRATE: itemRateExclVat,
-          ITEMVAT: itemVat,
+          ITEMRATE: lineItemRateExclVat, // Rate for the total quantity of this item, excluding VAT
+          ITEMVAT: lineItemVat,
           ITEMCURRENCY: "KSH",
-          ITEMAMOUNT: itemAmountInclVat,
+          ITEMAMOUNT: lineItemAmountInclVat, // Total amount for this line item, including VAT
           DIVISION: 'NAIROBI',
           CREATEDBY: user.email.split("@")[0].toUpperCase(),
           CREATEDDATE: datePass,

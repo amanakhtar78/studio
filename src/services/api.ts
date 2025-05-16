@@ -10,7 +10,8 @@ const apiClient = axios.create({
   },
 });
 
-const HARDCODED_SESSION_TOKEN = "MjU3OTU0ZTAxNWJlNTNkN2M5MTE2MTI3NzM3YzhmZDY6N2RhZWE2NmNhMzRjYzIyMzQ1OWU0NjAwODI4NDVmNzU1NmUwMmM0MjdjMGQ3MTMxYWRkZDE4NDU4NTI5OWIwMy8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3MjQ3YmZmOWMxZWEyMWRkYTQwZDA1OGU2ZTM0MDAyNi8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3YjYyZjgxMTA4ZjI4NzRjNDRiM2EwZWMwNGVlYzQzNw==";
+// Ensure this is the latest, correct token.
+const HARDCODED_SESSION_TOKEN = "MjU3OTU0ZTAxNWJlNTNkN2M5MTE2MTI3NzM3YzhmZDY6N2RhZWE2NmNhMzRjYzIyMzQ1OWU0NjAwODI4NDVmNzU1NmUwMmM0MjdjMGQ3MTMxYWRkZDE4NDU4NTI5OWIwMy8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjplZGZlNDY3M2M0YzQ4MGVjYzg1NjFmZTM1MDFmZTI2NS8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3MjQ3YmZmOWMxZWEyMWRkYTQwZDA1OGU2ZTM0MDAyNi8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3YjYyZjgxMTA4ZjI4NzRjNDRiM2EwZWMwNGVlYzQzNw==";
 
 // Fetches products from viewname=792 for public display
 export const fetchProductsAPI = () => {
@@ -87,7 +88,7 @@ export const saveSalesEnquiryHeaderAPI = (payload: SalesEnquiryHeaderPayload) =>
 
 export const saveSalesEnquiryItemAPI = (payload: SalesEnquiryItemPayload) => {
   return apiClient.post<SalesEnquiryResponse>(
-    `https://devapi.tech23.net/global/globalSPHandler?spname=206`, // Corrected SP name for items
+    `https://devapi.tech23.net/global/globalSPHandler?spname=206`, 
     payload,
     {
       headers: {
