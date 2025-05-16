@@ -32,7 +32,7 @@ export interface Product {
   ITEM_BASE_UOM?: string;
   ITEM_ALT_UOM?: string;
   ITEM_CONV_FACTOR?: number;
-  ITEM_VATABLE?: string;
+  ITEM_VATABLE?: string; // "YES" or "NO"
   REORDER_LEVEL?: number | null;
   REORDER_QTY?: number | null;
   COST_PRICE?: number | null;
@@ -60,7 +60,6 @@ export interface User {
   phoneNumber?: string;
   alternatePhoneNumber?: string;
   address?: UserAddress;
-  // We will NOT store password here for security reasons
 }
 
 export const signupFormSchema = z.object({
@@ -100,7 +99,7 @@ export interface AuthContextType {
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
   signup: (data: SignupFormData) => Promise<boolean>;
-  updateUserProfile: (updatedProfileData: Partial<User>, currentPasswordForApi: string) => Promise<boolean>; // Added currentPasswordForApi
+  updateUserProfile: (updatedProfileData: Partial<User>, currentPasswordForApi: string) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 // --- END AUTH and USER TYPES ---
@@ -240,12 +239,11 @@ export interface UpdateProductImagePathResponse {
 // --- END ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
 
 // --- START USER SIGNUP API (SP 128) TYPES ---
-// Payload for SP 128 (Signup and potentially Profile Update)
 export interface UserSignupPayload {
   FIRSTNAME: string;
   LASTNAME: string;
-  EMAILADDRESS: string; // Primary key for matching existing user
-  PASSWORD?: string;     // Required for signup, optional for profile update (if not changing password)
+  EMAILADDRESS: string; 
+  PASSWORD?: string;     
   COUNTRY?: string;
   CITY?: string;
   POSTALCODE?: string;
@@ -264,14 +262,72 @@ export interface ApiUserDetail {
   PASSWORD?: string; 
   FIRSTNAME: string;
   LASTNAME: string;
-  CITY?: string; // Made optional as it might not always be present
+  CITY?: string; 
   CONFIRMED?: boolean;
   CONFIRMEDDATETIME?: string | null;
-  COUNTRY?: string; // Made optional
+  COUNTRY?: string; 
   PHONENUMBER?: string;
-  PHYSICALADDRESS?: string; // Made optional
-  POSTALCODE?: string; // Made optional
+  PHYSICALADDRESS?: string; 
+  POSTALCODE?: string; 
   REGISTRATIONDATE?: string;
   REGISTRATIONTIME?: string;
 }
 // --- END API USER DETAIL (VIEWNAME 610) TYPE ---
+
+// --- START CHECKOUT ORDER SAVING TYPES ---
+export interface NextPurchaseOrderNumber {
+  NEXTPONO: string;
+}
+export type NextPurchaseOrderNumberResponse = NextPurchaseOrderNumber[];
+
+
+export interface SalesEnquiryHeaderPayload {
+  SALESENQUIRYNO: number;
+  SALESENQUIRYITEMSSERVICE: number; // 0
+  CLIENTCODE: string; // user.email
+  REFFROM: string; // "ZAHARASWEETROOLE"
+  SALESENQUIRYDATE: string; // YYYY-MM-DD
+  SALESENQUIRYVEHICLE: string; // ""
+  DIVISION: string; // "NAIROBI"
+  SALESENQUIRYNOTES: string; // "" or from form
+  CREATEDBY: string; // user.email.split("@")[0].toUpperCase()
+  CREATEDDATE: string; // YYYY-MM-DD
+  CREATEDTIME: string; // HH:MM:SS
+  AMOUNTEXCVAT: number;
+  VATAMOUNT: number;
+  AMTOUNTINCLUSIVEVAT: number;
+  CURRENCYCODE: string; // "KSH"
+  MODEOFPAY: string; // "ONLINE" (or from form if you add selector)
+  CLIENTNAME: string; // checkoutFormData.fullName or user.name
+  DELIVERYADDRESS: string; // checkoutFormData.deliveryAddress
+  CLIENTEMAIL: string; // user.email
+  CLIENTCOUNTRY: string; // user.address.country or checkoutFormData
+  CLIENTCITY: string; // user.address.city or checkoutFormData
+  CLIENTPHONENUMBER: string; // checkoutFormData.phoneNumber
+  CARTNO: number; // newSalesEnquiryNo
+  DELIVERYPROVIDED: number; // 0
+  DELIVERYROUTE: number; // 0
+  DELIVERYCHARGES: number; // 0
+}
+
+export interface SalesEnquiryItemPayload {
+  SALESENQUIRYNO: number; // newSalesEnquiryNo
+  SALESENQUIRYDATE: string; // YYYY-MM-DD
+  SERIALNO: number; // index + 1
+  ITEMCODE: string; // product.id
+  ITEMDESCRIPTION: string; // product.title
+  UOM: string; // product.ITEM_BASE_UOM or "PCS"
+  ITEMQTY: number; // cartItem.cartQuantity
+  ITEMRATE: number; // itemRateExclVat (price * qty)
+  ITEMVAT: number; // calculated VAT for the item
+  ITEMCURRENCY: string; // "KSH"
+  ITEMAMOUNT: number; // itemRateExclVat + ITEMVAT
+  DIVISION: string; // "NAIROBI"
+  CREATEDBY: string; // user.email.split("@")[0].toUpperCase()
+  CREATEDDATE: string; // YYYY-MM-DD
+}
+
+export interface SalesEnquiryResponse {
+  message: string; // e.g., "Document Saved"
+}
+// --- END CHECKOUT ORDER SAVING TYPES ---

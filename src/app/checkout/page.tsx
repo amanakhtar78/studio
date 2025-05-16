@@ -14,8 +14,9 @@ import { Minus, Plus, Trash2, Loader2, ShoppingCart } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
-import type { CheckoutFormData, Product } from '@/types'; // Product type is updated
+import type { CheckoutFormData, SalesEnquiryHeaderPayload, SalesEnquiryItemPayload } from '@/types';
 import { useEffect, useState, useMemo } from 'react';
+import { format } from 'date-fns';
 
 import {
   Form,
@@ -30,6 +31,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
+import { fetchNextSalesEnquiryNoAPI, saveSalesEnquiryHeaderAPI, saveSalesEnquiryItemAPI } from '@/services/api';
 
 
 const checkoutFormSchema = z.object({
@@ -45,13 +47,11 @@ export default function CheckoutPage() {
     updateItemQuantity, 
     clearCart, 
     getCartItemsWithDetails, 
-    getCartSubtotal 
   } = useCart();
   const { user, isAuthenticated, isLoading: authIsLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
-  // allApiProducts are now of the updated Product type
   const { items: allApiProducts, status: productStatus } = useSelector((state: RootState) => state.products);
   
   const cartItemsWithDetails = useMemo(() => {
@@ -59,14 +59,27 @@ export default function CheckoutPage() {
       return getCartItemsWithDetails(allApiProducts);
     }
     return [];
-  }, [productStatus, allApiProducts, getCartItemsWithDetails, cartItemsBase]); // Added cartItemsBase
+  }, [productStatus, allApiProducts, getCartItemsWithDetails, cartItemsBase]);
 
-  const cartSubtotal = useMemo(() => {
-    if (productStatus === 'succeeded' && allApiProducts.length > 0) {
-      return getCartSubtotal(allApiProducts);
+  const { cartSubtotal, totalAmountExclVat, totalVatAmount, totalAmountInclVat } = useMemo(() => {
+    if (productStatus !== 'succeeded' || allApiProducts.length === 0) {
+      return { cartSubtotal: 0, totalAmountExclVat: 0, totalVatAmount: 0, totalAmountInclVat: 0 };
     }
-    return 0;
-  }, [productStatus, allApiProducts, getCartSubtotal, cartItemsBase]); // Added cartItemsBase
+    const subtotal = cartItemsWithDetails.reduce((sum, item) => sum + item.price * item.cartQuantity, 0);
+    let exclVat = 0;
+    let vatAmount = 0;
+    const vatRate = 0.16; // 16%
+
+    cartItemsWithDetails.forEach(item => {
+      const lineTotalExclVat = item.price * item.cartQuantity;
+      exclVat += lineTotalExclVat;
+      if (item.ITEM_VATABLE?.toUpperCase() === 'YES') {
+        vatAmount += lineTotalExclVat * vatRate;
+      }
+    });
+    const inclVat = exclVat + vatAmount;
+    return { cartSubtotal: subtotal, totalAmountExclVat: exclVat, totalVatAmount: vatAmount, totalAmountInclVat: inclVat };
+  }, [productStatus, allApiProducts, cartItemsWithDetails]);
 
 
   const form = useForm<CheckoutFormData>({
@@ -82,11 +95,31 @@ export default function CheckoutPage() {
   const [useProfileAddress, setUseProfileAddress] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState(false);
   const placeholderImage = "https://placehold.co/64x64.png";
+  const [newSalesEnquiryNo, setNewSalesEnquiryNo] = useState<string | null>(null);
+  const [isFetchingEnquiryNo, setIsFetchingEnquiryNo] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    const fetchEnquiryNo = async () => {
+      setIsFetchingEnquiryNo(true);
+      try {
+        const response = await fetchNextSalesEnquiryNoAPI();
+        if (response.data && response.data.length > 0 && response.data[0].NEXTPONO) {
+          setNewSalesEnquiryNo(response.data[0].NEXTPONO);
+        } else {
+          toast({ title: 'Error', description: 'Could not fetch order number. Please try again.', variant: 'destructive' });
+        }
+      } catch (error) {
+        console.error("Error fetching new sales enquiry number:", error);
+        toast({ title: 'Error', description: 'Failed to initialize order. Please refresh.', variant: 'destructive' });
+      } finally {
+        setIsFetchingEnquiryNo(false);
+      }
+    };
+    fetchEnquiryNo();
+  }, [toast]);
 
   useEffect(() => {
     if (isMounted && isAuthenticated && user?.address) {
@@ -128,23 +161,103 @@ export default function CheckoutPage() {
   }, [isMounted, user, isAuthenticated, useProfileAddress, form]);
 
 
-  const onSubmit = (data: CheckoutFormData) => {
-    console.log('Order placed:', {
-      customerDetails: data,
-      items: cartItemsWithDetails,
-      total: cartSubtotal,
-    });
-    toast({
-      title: 'Order Placed!',
-      description: 'Your delicious treats are on their way!',
-      variant: 'default', 
-    });
-    clearCart();
-    const mockOrderId = `ORD${Date.now().toString().slice(-6)}`; 
-    router.push(`/my-orders/${mockOrderId}?new=true`); 
+  const handlePlaceOrder = async (data: CheckoutFormData) => {
+    if (!user) {
+      toast({ title: 'Authentication Error', description: 'Please log in to place an order.', variant: 'destructive' });
+      return;
+    }
+    if (!newSalesEnquiryNo) {
+      toast({ title: 'Order Error', description: 'Could not get an order number. Please try refreshing.', variant: 'destructive' });
+      return;
+    }
+    if (cartItemsWithDetails.length === 0) {
+      toast({ title: 'Empty Cart', description: 'Your cart is empty.', variant: 'destructive' });
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    const currentDate = new Date();
+    const datePass = format(currentDate, 'yyyy-MM-dd');
+    const timePass = format(currentDate, 'HH:mm:ss');
+
+    const headerPayload: SalesEnquiryHeaderPayload = {
+      SALESENQUIRYNO: Number(newSalesEnquiryNo),
+      SALESENQUIRYITEMSSERVICE: 0,
+      CLIENTCODE: user.email,
+      REFFROM: "ZAHARASWEETROOLE",
+      SALESENQUIRYDATE: datePass,
+      SALESENQUIRYVEHICLE: "",
+      DIVISION: 'NAIROBI',
+      SALESENQUIRYNOTES: "", // Add a field for notes if needed
+      CREATEDBY: user.email.split("@")[0].toUpperCase(),
+      CREATEDDATE: datePass,
+      CREATEDTIME: timePass,
+      AMOUNTEXCVAT: totalAmountExclVat,
+      VATAMOUNT: totalVatAmount,
+      AMTOUNTINCLUSIVEVAT: totalAmountInclVat,
+      CURRENCYCODE: "KSH",
+      MODEOFPAY: "ONLINE", // Or implement selection
+      CLIENTNAME: data.fullName,
+      DELIVERYADDRESS: data.deliveryAddress,
+      CLIENTEMAIL: user.email,
+      CLIENTCOUNTRY: user.address?.country || "Kenya",
+      CLIENTCITY: user.address?.city || data.deliveryAddress.split(',').pop()?.trim() || "Nairobi", // Basic city extraction
+      CLIENTPHONENUMBER: data.phoneNumber,
+      CARTNO: Number(newSalesEnquiryNo),
+      DELIVERYPROVIDED: 0,
+      DELIVERYROUTE: 0,
+      DELIVERYCHARGES: 0,
+    };
+
+    try {
+      const headerResponse = await saveSalesEnquiryHeaderAPI(headerPayload);
+      if (!headerResponse.data || !headerResponse.data.message.toLowerCase().includes('document saved')) {
+        throw new Error(headerResponse.data.message || 'Failed to save order header.');
+      }
+      toast({ title: 'Order Header Saved', description: 'Processing items...', variant: 'default' });
+
+      for (let i = 0; i < cartItemsWithDetails.length; i++) {
+        const item = cartItemsWithDetails[i];
+        const itemRateExclVat = item.price * item.cartQuantity;
+        const itemVat = item.ITEM_VATABLE?.toUpperCase() === 'YES' ? itemRateExclVat * 0.16 : 0;
+        const itemAmountInclVat = itemRateExclVat + itemVat;
+
+        const itemPayload: SalesEnquiryItemPayload = {
+          SALESENQUIRYNO: Number(newSalesEnquiryNo),
+          SALESENQUIRYDATE: datePass,
+          SERIALNO: i + 1,
+          ITEMCODE: item.id, // product.id is ITEM CODE
+          ITEMDESCRIPTION: item.title,
+          UOM: item.ITEM_BASE_UOM || "PCS",
+          ITEMQTY: item.cartQuantity,
+          ITEMRATE: itemRateExclVat,
+          ITEMVAT: itemVat,
+          ITEMCURRENCY: "KSH",
+          ITEMAMOUNT: itemAmountInclVat,
+          DIVISION: 'NAIROBI',
+          CREATEDBY: user.email.split("@")[0].toUpperCase(),
+          CREATEDDATE: datePass,
+        };
+        const itemResponse = await saveSalesEnquiryItemAPI(itemPayload);
+        if (!itemResponse.data || !itemResponse.data.message.toLowerCase().includes('document saved')) {
+          throw new Error(`Failed to save item ${item.title}: ${itemResponse.data.message || 'Unknown error'}`);
+        }
+      }
+
+      toast({ title: 'Order Placed Successfully!', description: `Your order #${newSalesEnquiryNo} is confirmed.`, variant: 'default' });
+      clearCart();
+      router.push(`/my-orders/${newSalesEnquiryNo}?new=true`);
+
+    } catch (error: any) {
+      console.error("Error placing order:", error);
+      toast({ title: 'Order Placement Failed', description: error.message || 'An unexpected error occurred.', variant: 'destructive' });
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
-  if (!isMounted || productStatus === 'loading' || (authIsLoading && !user)) {
+
+  if (!isMounted || productStatus === 'loading' || (authIsLoading && !user) || isFetchingEnquiryNo) {
      return (
       <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -211,8 +324,9 @@ export default function CheckoutPage() {
                       variant="outline" 
                       size="icon" 
                       className="h-9 w-9" 
-                      onClick={() => updateItemQuantity(item.id, item.cartQuantity - 1)} // item.id is now string
+                      onClick={() => updateItemQuantity(item.id, item.cartQuantity - 1)}
                       aria-label={`Decrease quantity of ${item.title}`}
+                      disabled={isPlacingOrder}
                     > 
                       <Minus className="h-4 w-4" />
                     </Button>
@@ -221,8 +335,8 @@ export default function CheckoutPage() {
                       variant="outline" 
                       size="icon" 
                       className="h-9 w-9" 
-                      onClick={() => updateItemQuantity(item.id, item.cartQuantity + 1)} // item.id is now string
-                      disabled={!item.stockAvailability}
+                      onClick={() => updateItemQuantity(item.id, item.cartQuantity + 1)}
+                      disabled={!item.stockAvailability || isPlacingOrder}
                       aria-label={`Increase quantity of ${item.title}`}
                     > 
                       <Plus className="h-4 w-4" />
@@ -233,8 +347,9 @@ export default function CheckoutPage() {
                     variant="ghost" 
                     size="icon" 
                     className="text-destructive hover:text-destructive/80 h-9 w-9" 
-                    onClick={() => updateItemQuantity(item.id, 0)} // item.id is now string
+                    onClick={() => updateItemQuantity(item.id, 0)}
                     aria-label={`Remove ${item.title} from cart`}
+                    disabled={isPlacingOrder}
                   > 
                      <Trash2 className="h-4 w-4" />
                   </Button>
@@ -244,7 +359,11 @@ export default function CheckoutPage() {
               )}
             </CardContent>
             <CardFooter className="flex justify-end items-center p-4 border-t">
-                <p className="text-lg font-bold">Subtotal: KES {cartSubtotal.toLocaleString()}</p>
+                <div className="text-right text-sm">
+                    <p>Subtotal (Excl. VAT): KES {totalAmountExclVat.toLocaleString()}</p>
+                    <p>VAT (16%): KES {totalVatAmount.toLocaleString()}</p>
+                    <p className="text-lg font-bold mt-1">Total: KES {totalAmountInclVat.toLocaleString()}</p>
+                </div>
             </CardFooter>
           </Card>
         </div>
@@ -265,6 +384,7 @@ export default function CheckoutPage() {
                     setUseProfileAddress(value === "profile");
                   }}
                   className="mb-4"
+                  disabled={isPlacingOrder}
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="profile" id="rProfileAddress" />
@@ -275,7 +395,7 @@ export default function CheckoutPage() {
                       <p><strong>{user.name}</strong></p>
                       <p>{user.phoneNumber || 'No phone on file'}</p>
                       <p>{user.address.street}, {user.address.city}</p>
-                      <p>{user.address.pinCode} <span className="capitalize">({user.address.addressType})</span></p>
+                      <p>{user.address.pinCode} {user.address.country && `(${user.address.country})`} <span className="capitalize">({user.address.addressType})</span></p>
                     </Card>
                   )}
                   <div className="flex items-center space-x-2 mt-1.5">
@@ -286,7 +406,7 @@ export default function CheckoutPage() {
               )}
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(handlePlaceOrder)} className="space-y-4">
                   <FormField
                     control={form.control}
                     name="fullName"
@@ -294,7 +414,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={useProfileAddress && !!user?.name} className="h-9 text-sm" />
+                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={(useProfileAddress && !!user?.name) || isPlacingOrder} className="h-9 text-sm" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -307,7 +427,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Phone Number</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={useProfileAddress && !!user?.phoneNumber} className="h-9 text-sm" />
+                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={(useProfileAddress && !!user?.phoneNumber) || isPlacingOrder} className="h-9 text-sm" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -320,7 +440,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Delivery Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. 123 Bakery St, Apt 4B, Nairobi" {...field} disabled={useProfileAddress && !!user?.address?.street} className="h-9 text-sm" />
+                          <Input placeholder="e.g. 123 Bakery St, Apt 4B, Nairobi" {...field} disabled={(useProfileAddress && !!user?.address?.street) || isPlacingOrder} className="h-9 text-sm" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -333,7 +453,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Pin Code / Postal Code</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. 00100" {...field} disabled={useProfileAddress && !!user?.address?.pinCode} className="h-9 text-sm" />
+                          <Input placeholder="e.g. 00100" {...field} disabled={(useProfileAddress && !!user?.address?.pinCode) || isPlacingOrder} className="h-9 text-sm" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -343,10 +463,10 @@ export default function CheckoutPage() {
                     type="submit" 
                     size="default" 
                     className="w-full text-sm py-2.5 bg-accent hover:bg-accent/90 text-accent-foreground" 
-                    disabled={form.formState.isSubmitting || cartItemsWithDetails.length === 0 || authIsLoading}
+                    disabled={isPlacingOrder || form.formState.isSubmitting || cartItemsWithDetails.length === 0 || authIsLoading || isFetchingEnquiryNo || !newSalesEnquiryNo}
                   >
-                    {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Place Order (KES {cartSubtotal.toLocaleString()})
+                    {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Place Order (KES {totalAmountInclVat.toLocaleString()})
                   </Button>
                 </form>
               </Form>
