@@ -20,7 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UpdatePasswordDialog } from '@/components/auth/update-password-dialog'; // New component
+import { UpdatePasswordDialog } from '@/components/auth/update-password-dialog';
+import { ConfirmPasswordDialog } from '@/components/auth/confirm-password-dialog'; // New Dialog
+import { fetchAuthenticatedUserAPI } from '@/services/api'; // For password verification
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required." }),
@@ -43,6 +45,9 @@ export default function EditProfilePage() {
   const { user, updateUserProfile, isLoading: authIsLoading } = useAuth();
   const { toast } = useToast();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isConfirmPasswordDialogOpen, setIsConfirmPasswordDialogOpen] = useState(false);
+  const [profileDataForConfirmation, setProfileDataForConfirmation] = useState<Partial<User> | null>(null);
+
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -87,7 +92,7 @@ export default function EditProfilePage() {
     const updateData: Partial<User> = {
       firstName: data.firstName,
       lastName: data.lastName,
-      name: `${data.firstName} ${data.lastName}`.trim(), // Update full name
+      name: `${data.firstName} ${data.lastName}`.trim(),
       phoneNumber: data.phoneNumber || undefined,
       alternatePhoneNumber: data.alternatePhoneNumber || undefined,
       address: data.address ? {
@@ -99,16 +104,51 @@ export default function EditProfilePage() {
       } : undefined,
     };
     
-    const success = await updateUserProfile(updateData); // This will call the updated API logic
-    if (success) {
-      toast({
-        title: 'Profile Updated',
-        description: 'Your information has been successfully updated.',
-      });
-    } else {
-      // Toast for failure is handled within updateUserProfile in AuthContext
+    setProfileDataForConfirmation(updateData);
+    setIsConfirmPasswordDialogOpen(true);
+  };
+
+  const handleConfirmedProfileSave = async (enteredPassword: string, dataToSave: Partial<User>): Promise<boolean> => {
+    if (!user) {
+        toast({ title: "Error", description: "User session not found.", variant: "destructive" });
+        return false;
+    }
+
+    try {
+        // Step 1: Verify the entered password
+        const verifyResponse = await fetchAuthenticatedUserAPI(user.email, enteredPassword);
+        if (!verifyResponse.data || verifyResponse.data.length === 0) {
+            toast({ title: 'Save Failed', description: 'Incorrect current password.', variant: 'destructive' });
+            return false;
+        }
+
+        // Step 2: If password is correct, proceed with the update
+        const success = await updateUserProfile(dataToSave, enteredPassword); // Pass validated password
+        if (success) {
+          toast({
+            title: 'Profile Updated',
+            description: 'Your information has been successfully updated.',
+          });
+          setIsConfirmPasswordDialogOpen(false);
+          setProfileDataForConfirmation(null);
+          return true;
+        } else {
+          // Toast for failure is handled within updateUserProfile in AuthContext
+          setIsConfirmPasswordDialogOpen(false); // Keep dialog open if update itself failed post-verification
+          setProfileDataForConfirmation(null);
+          return false;
+        }
+    } catch (error: any) {
+        console.error("Error during password verification for profile update:", error);
+        toast({ 
+            title: 'Save Failed', 
+            description: error.response?.data?.message || error.message || 'An error occurred while verifying your password.', 
+            variant: 'destructive' 
+        });
+        return false;
     }
   };
+
 
   if (authIsLoading && !user) {
     return (
@@ -236,6 +276,14 @@ export default function EditProfilePage() {
         </Card>
       </div>
       <UpdatePasswordDialog isOpen={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen} />
+      {profileDataForConfirmation && (
+        <ConfirmPasswordDialog
+            isOpen={isConfirmPasswordDialogOpen}
+            onOpenChange={setIsConfirmPasswordDialogOpen}
+            profileDataToSave={profileDataForConfirmation}
+            onConfirmedSave={handleConfirmedProfileSave}
+        />
+      )}
     </>
   );
 }

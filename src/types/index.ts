@@ -63,19 +63,24 @@ export interface User {
   // We will NOT store password here for security reasons
 }
 
-export interface SignupData {
-  firstName: string; 
-  lastName: string;
-  email: string;
-  password?: string; // Password for signup
-  confirmPassword?: string; // For client-side validation
-  phoneNumber?: string;
-  addressStreet?: string; 
-  addressCity?: string; 
-  addressPinCode?: string; 
-  country?: string; 
-  addressType?: AddressType; 
-}
+export const signupFormSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required."}),
+  lastName: z.string().min(1, { message: "Last name is required."}),
+  email: z.string().email({ message: "Invalid email address." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  confirmPassword: z.string().min(6, {message: "Confirm password must be at least 6 characters."}),
+  phoneNumber: z.string().regex(/^\+?[0-9]{10,14}$/, { message: "Invalid phone number format. e.g. +254712345678" }).optional().or(z.literal('')),
+  addressStreet: z.string().min(5, { message: "Street address must be at least 5 characters." }).optional().or(z.literal('')),
+  addressCity: z.string().min(2, { message: "City must be at least 2 characters." }).optional().or(z.literal('')),
+  addressPinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code." }).optional().or(z.literal('')),
+  country: z.string().min(2, { message: "Country must be at least 2 characters." }).optional().or(z.literal('')),
+  addressType: z.enum(['home', 'office', 'other'], { errorMap: () => ({ message: "Please select an address type."}) }).optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"], 
+});
+export type SignupFormData = z.infer<typeof signupFormSchema>;
+
 
 export const updatePasswordSchema = z.object({
   currentPassword: z.string().min(1, { message: "Current password is required." }),
@@ -87,6 +92,17 @@ export const updatePasswordSchema = z.object({
 });
 export type UpdatePasswordFormData = z.infer<typeof updatePasswordSchema>;
 
+
+export interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, pass: string) => Promise<boolean>;
+  logout: () => void;
+  signup: (data: SignupFormData) => Promise<boolean>;
+  updateUserProfile: (updatedProfileData: Partial<User>, currentPasswordForApi: string) => Promise<boolean>; // Added currentPasswordForApi
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+}
 // --- END AUTH and USER TYPES ---
 
 

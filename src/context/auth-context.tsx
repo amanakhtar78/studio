@@ -3,20 +3,9 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
-import type { User, UserAddress, SignupData, ApiUserDetail, UserSignupPayload } from '@/types';
+import type { User, UserAddress, SignupFormData, ApiUserDetail, UserSignupPayload, AuthContextType } from '@/types'; // Updated to SignupFormData
 import { useToast } from '@/hooks/use-toast';
 import { userSignupAPI, checkUserExistsAPI, fetchAuthenticatedUserAPI } from '@/services/api'; 
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, pass: string) => Promise<boolean>;
-  logout: () => void;
-  signup: (data: SignupData) => Promise<boolean>;
-  updateUserProfile: (updatedProfileData: Partial<User>) => Promise<boolean>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -41,20 +30,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const mapApiUserToUser = (apiUser: ApiUserDetail): User => {
+    const firstName = apiUser.FIRSTNAME || '';
+    const lastName = apiUser.LASTNAME || '';
     return {
       id: apiUser.EMAILADDRESS, 
       email: apiUser.EMAILADDRESS,
-      firstName: apiUser.FIRSTNAME,
-      lastName: apiUser.LASTNAME,
-      name: `${apiUser.FIRSTNAME || ''} ${apiUser.LASTNAME || ''}`.trim(),
-      avatarUrl: `https://placehold.co/100x100.png?text=${(apiUser.FIRSTNAME || 'U').charAt(0)}${(apiUser.LASTNAME || '').charAt(0)}`.toUpperCase(),
+      firstName: firstName,
+      lastName: lastName,
+      name: `${firstName} ${lastName}`.trim(),
+      avatarUrl: `https://placehold.co/100x100.png?text=${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase(),
       phoneNumber: apiUser.PHONENUMBER,
       address: (apiUser.PHYSICALADDRESS && apiUser.CITY && apiUser.POSTALCODE) ? {
         street: apiUser.PHYSICALADDRESS,
         city: apiUser.CITY,
         pinCode: apiUser.POSTALCODE,
         country: apiUser.COUNTRY || '', 
-        addressType: (apiUser.PHYSICALADDRESS?.toLowerCase().includes('office') ? 'office' : 'home') as AddressType, // Basic inference for addressType
+        addressType: (apiUser.PHYSICALADDRESS?.toLowerCase().includes('office') ? 'office' : 'home') as AddressType,
       } : undefined,
     };
   };
@@ -91,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
   }, [toast]);
 
-  const signup = useCallback(async (data: SignupData): Promise<boolean> => {
+  const signup = useCallback(async (data: SignupFormData): Promise<boolean> => {
     setIsLoading(true);
     try {
       const existingUserResponse = await checkUserExistsAPI(data.email);
@@ -158,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [toast]);
 
-  const updateUserProfile = useCallback(async (updatedProfileData: Partial<User>): Promise<boolean> => {
+  const updateUserProfile = useCallback(async (updatedProfileData: Partial<User>, currentPasswordForApi: string): Promise<boolean> => {
     if (!user) {
       toast({ title: 'Error', description: 'You must be logged in to update your profile.', variant: 'destructive' });
       return false;
@@ -171,7 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       FIRSTNAME: updatedProfileData.firstName || currentUser.firstName || '',
       LASTNAME: updatedProfileData.lastName || currentUser.lastName || '',
       EMAILADDRESS: currentUser.email, 
-      PASSWORD: "", // Sending empty string for password as requested for non-password updates
+      PASSWORD: currentPasswordForApi, // Use the provided, validated password
       PHONENUMBER: updatedProfileData.phoneNumber !== undefined ? updatedProfileData.phoneNumber : (currentUser.phoneNumber || ''),
       PHYSICALADDRESS: updatedProfileData.address?.street !== undefined ? updatedProfileData.address.street : (currentUser.address?.street || ''),
       CITY: updatedProfileData.address?.city !== undefined ? updatedProfileData.address.city : (currentUser.address?.city || ''),
@@ -187,7 +178,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const newUser = { 
             ...prevUser, 
             ...updatedProfileData,
-            name: `${payload.FIRSTNAME} ${payload.LASTNAME}`.trim(), // Ensure name is updated
+            firstName: payload.FIRSTNAME, // Ensure first name is updated
+            lastName: payload.LASTNAME,   // Ensure last name is updated
+            name: `${payload.FIRSTNAME} ${payload.LASTNAME}`.trim(), // Ensure full name is updated
             address: payload.PHYSICALADDRESS || payload.CITY || payload.POSTALCODE || payload.COUNTRY ? {
               street: payload.PHYSICALADDRESS || '',
               city: payload.CITY || '',
@@ -231,7 +224,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
         return false;
       }
-    } catch (error: any) {
+    } catch (error: any)
+     {
       console.error("Verify current password API error:", error);
       const errorMessage = error.response?.data?.message || error.message || 'Could not verify current password.';
       toast({ title: 'Password Change Failed', description: errorMessage, variant: 'destructive' });
@@ -255,6 +249,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updateResponse = await userSignupAPI(payload); 
       if (updateResponse.data && updateResponse.data.message && updateResponse.data.message.toLowerCase().includes('document saved')) {
         toast({ title: 'Password Updated', description: 'Your password has been successfully changed.' });
+        // No need to update user state here, as password changes don't alter displayed user info
+        // other than potentially invalidating a stored token if your backend does that.
         setIsLoading(false);
         return true;
       } else {
@@ -300,5 +296,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
-    
