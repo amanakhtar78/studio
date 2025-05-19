@@ -1,6 +1,6 @@
 
 'use client';
-import type { AdminProduct, Product, UserSignupPayload, UserSignupResponse, ApiUserDetail, NextPurchaseOrderNumberResponse, SalesEnquiryHeaderPayload, SalesEnquiryItemPayload, SalesEnquiryResponse } from '@/types';
+import type { AdminProduct, UserSignupPayload, UserSignupResponse, ApiUserDetail, NextPurchaseOrderNumberResponse, SalesEnquiryHeaderPayload, SalesEnquiryItemPayload, SalesEnquiryResponse, ApiOrderHeader } from '@/types';
 import axios from 'axios';
 
 // This apiClient is for public-facing API calls
@@ -99,6 +99,19 @@ export const saveSalesEnquiryItemAPI = (payload: SalesEnquiryItemPayload) => {
   );
 };
 // --- END CHECKOUT ORDER SAVING API FUNCTIONS ---
+
+// --- START ORDER HISTORY API ---
+export const fetchOrderHistoryAPI = (clientEmail: string) => {
+  return apiClient.get<ApiOrderHeader[]>(
+    `https://devapi.tech23.net/global/globalViewHandler?viewname=655&CLIENTEMAIL=${encodeURIComponent(clientEmail)}`,
+    {
+      headers: {
+        'session-token': HARDCODED_SESSION_TOKEN,
+      }
+    }
+  );
+};
+// --- END ORDER HISTORY API ---
 
 
 export default apiClient;

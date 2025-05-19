@@ -15,19 +15,20 @@ export interface Category {
   slug: string; 
 }
 
+// Updated Product to reflect new API (viewname=792)
 export interface Product {
-  id: string; 
-  title: string; 
-  price: number; 
-  description: string; 
-  category: string; 
-  image: string | null; 
-  classification: string; 
+  id: string; // ITEM CODE
+  title: string; // ITEM NAME
+  price: number; // SELLINGPRICE
+  description: string; // ITEM DESCRIPTION
+  category: string; // ITEM CATEGORY
+  image: string | null; // IMAGEPATH
+  classification: string; // ITEM CLASSIFICATION
   rating: { 
-    rate: number;
-    count: number; 
+    rate: number; // RATING
+    count: number; // Not in new API, default to 0
   };
-  stockAvailability: boolean; 
+  stockAvailability: boolean; // Not in new API, defaulting to true
   PART_NO?: string;
   ITEM_BASE_UOM?: string;
   ITEM_ALT_UOM?: string;
@@ -98,20 +99,21 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  signup: (data: SignupFormData) => Promise<boolean>;
+  signup: (data: SignupData) => Promise<boolean>; // SignupData is still used here internally
   updateUserProfile: (updatedProfileData: Partial<User>, currentPasswordForApi: string) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
+export type SignupData = SignupFormData; // Alias for clarity if AuthContext uses SignupData
 // --- END AUTH and USER TYPES ---
 
 
 // --- START ORDER TYPES ---
-export type OrderType = 'dine-in' | 'delivery';
+export type OrderType = 'dine-in' | 'delivery'; // This might be hard to determine from viewname=655
 
 export type OrderStatusDineIn = "Order Placed" | "Being Prepared" | "Table Ready" | "Completed";
 export type OrderStatusDelivery = "Order Placed" | "Being Prepared" | "In Transit" | "Delivered";
-
-export type OrderStatus = OrderStatusDineIn | OrderStatusDelivery;
+// Adding more general statuses that might come from API
+export type OrderStatus = OrderStatusDineIn | OrderStatusDelivery | "Unknown Status" | "Processing"; // Added more
 
 export const DINE_IN_ORDER_STATUS_STEPS: OrderStatusDineIn[] = ["Order Placed", "Being Prepared", "Table Ready", "Completed"];
 export const DELIVERY_ORDER_STATUS_STEPS: OrderStatusDelivery[] = ["Order Placed", "Being Prepared", "In Transit", "Delivered"];
@@ -126,17 +128,35 @@ export interface OrderItemDetail {
   dataAiHint?: string;
 }
 
+// Represents the data from viewname=655 API
+export interface ApiOrderHeader {
+  ENQUIRYNO: string;
+  REFFROM: string;
+  ENQUIRYDATE: string; // ISO Date string
+  CLIENTCODE: string;
+  CLIENTEMAIL: string;
+  "CLIENT NAME": string;
+  PHONENUMBER: string;
+  ENQUIRYSTATUS: number; // Numeric status
+  // Add other fields from the API response as needed
+}
+
+// This is the Order type used by the application, potentially enriched from multiple API calls or defaults
 export interface Order {
-  id: string;
-  userId: string;
-  orderType: OrderType;
-  currentStatus: OrderStatus;
-  statusHistory: { status: OrderStatus; timestamp: string }[];
-  items: OrderItemDetail[];
-  totalAmount: number;
-  orderDate: string; 
-  estimatedTime?: string; 
-  deliveryDetails?: CheckoutFormDataType; // Changed from CheckoutFormData to CheckoutFormDataType
+  id: string; // Mapped from ENQUIRYNO
+  userId: string; // Mapped from CLIENTCODE or CLIENTEMAIL
+  orderType: OrderType; // Problematic: Not in viewname=655. Default or derive?
+  currentStatus: OrderStatus; // Mapped from ENQUIRYSTATUS
+  statusHistory: { status: OrderStatus; timestamp: string }[]; // Not in viewname=655
+  items: OrderItemDetail[]; // Not in viewname=655. Will be empty for list.
+  totalAmount: number; // Not in viewname=655.
+  orderDate: string; // Mapped from ENQUIRYDATE
+  estimatedTime?: string; // Not in viewname=655
+  deliveryDetails?: CheckoutFormDataType; // Not in viewname=655
+  clientName?: string; // Mapped from "CLIENT NAME"
+  phoneNumber?: string; // Mapped from PHONENUMBER
+  // Raw numeric status from API, useful for debugging or direct use if mapping is complex
+  rawEnquiryStatus?: number; 
 }
 // --- END ORDER TYPES ---
 
@@ -155,20 +175,19 @@ export interface CartItemWithProductDetails extends Product {
 export const checkoutFormSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
   phoneNumber: z.string().regex(/^\+?[0-9]{10,14}$/, { message: "Invalid phone number format. e.g. +254712345678" }),
-  // Delivery address fields are now validated based on addressOption
   deliveryAddress: z.string().optional(), 
   city: z.string().optional(),
   pinCode: z.string().optional(), 
   country: z.string().optional(),
   modeOfPayment: z.enum(['pay_on_delivery', 'online', 'credit_pay_later'], { required_error: "Please select a mode of payment." }),
   salesEnquiryNotes: z.string().max(250, { message: "Notes cannot exceed 250 characters." }).optional().or(z.literal('')),
-  addressOption: z.enum(['profile', 'new']).optional(), 
+  addressOption: z.enum(['profile', 'new']).default('profile'), 
 }).superRefine((data, ctx) => {
   if (data.addressOption === 'new') {
-    if (!data.deliveryAddress || data.deliveryAddress.length < 10) {
+    if (!data.deliveryAddress || data.deliveryAddress.length < 5) { // Adjusted min length
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Street address must be at least 10 characters.",
+        message: "Street address must be at least 5 characters.",
         path: ["deliveryAddress"],
       });
     }
@@ -179,10 +198,10 @@ export const checkoutFormSchema = z.object({
         path: ["city"],
       });
     }
-    if (!data.pinCode || !/^[0-9]{4,6}$/.test(data.pinCode)) {
+    if (!data.pinCode || !/^[0-9A-Za-z\s-]{3,10}$/.test(data.pinCode)) { // More flexible pincode
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Invalid pin code. e.g. 00100",
+        message: "Invalid pin code (3-10 chars).",
         path: ["pinCode"],
       });
     }
@@ -237,6 +256,7 @@ export interface AdminAuthState {
 // --- END ADMIN AUTH TYPES ---
 
 // --- START ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
+// AdminProduct type from API (viewname=792)
 export interface AdminProduct {
   "ITEM CODE": string;
   "PART NO": string;
@@ -323,57 +343,56 @@ export type NextPurchaseOrderNumberResponse = NextPurchaseOrderNumber[];
 
 export interface SalesEnquiryHeaderPayload {
   SALESENQUIRYNO: number;
-  SALESENQUIRYITEMSSERVICE: number; // 0
-  CLIENTCODE: string; // user.email
-  REFFROM: string; // "ZAHARASWEETROOLE"
-  SALESENQUIRYDATE: string; // YYYY-MM-DD
-  SALESENQUIRYVEHICLE: string; // ""
-  DIVISION: string; // "NAIROBI"
-  SALESENQUIRYNOTES: string; // from form or ""
-  CREATEDBY: string; // user.email.split("@")[0].toUpperCase()
-  CREATEDDATE: string; // YYYY-MM-DD
-  CREATEDTIME: string; // HH:MM:SS
+  SALESENQUIRYITEMSSERVICE: number; 
+  CLIENTCODE: string; 
+  REFFROM: string; 
+  SALESENQUIRYDATE: string; 
+  SALESENQUIRYVEHICLE: string; 
+  DIVISION: string; 
+  SALESENQUIRYNOTES: string; 
+  CREATEDBY: string; 
+  CREATEDDATE: string; 
+  CREATEDTIME: string; 
   AMOUNTEXCVAT: number;
   VATAMOUNT: number;
   AMTOUNTINCLUSIVEVAT: number;
-  CURRENCYCODE: string; // "KSH"
-  MODEOFPAY: string; // from form e.g. "ONLINE", "PAY ON DELIVERY", "CREDIT PAY LATER"
-  CLIENTNAME: string; // checkoutFormData.fullName or user.name
-  DELIVERYADDRESS: string; // checkoutFormData.deliveryAddress
-  CLIENTEMAIL: string; // user.email
-  CLIENTCOUNTRY: string; // checkoutFormData.country
-  CLIENTCITY: string; // checkoutFormData.city
-  CLIENTPHONENUMBER: string; // checkoutFormData.phoneNumber
-  CARTNO: number; // newSalesEnquiryNo
-  DELIVERYPROVIDED: number; // 0
-  DELIVERYROUTE: number; // 0
-  DELIVERYCHARGES: number; // 0
+  CURRENCYCODE: string; 
+  MODEOFPAY: string; 
+  CLIENTNAME: string; 
+  DELIVERYADDRESS: string; 
+  CLIENTEMAIL: string; 
+  CLIENTCOUNTRY: string; 
+  CLIENTCITY: string; 
+  CLIENTPHONENUMBER: string; 
+  CARTNO: number; 
+  DELIVERYPROVIDED: number; 
+  DELIVERYROUTE: number; 
+  DELIVERYCHARGES: number; 
   SUCCESS_STATUS: string,
   ERROR_STATUS: string,
 }
 
 export interface SalesEnquiryItemPayload {
-  SALESENQUIRYNO: number; // newSalesEnquiryNo
-  SALESENQUIRYDATE: string; // YYYY-MM-DD
-  SERIALNO: number; // index + 1
-  ITEMCODE: string; // product.id
-  ITEMDESCRIPTION: string; // product.title
-  UOM: string; // product.ITEM_BASE_UOM or "PCS"
-  ITEMQTY: number; // cartItem.cartQuantity
-  ITEMRATE: number; // itemRateExclVat (price * qty)
-  ITEMVAT: number; // calculated VAT for the item
-  ITEMCURRENCY: string; // "KSH"
-  ITEMAMOUNT: number; // itemRateExclVat + ITEMVAT
-  DIVISION: string; // "NAIROBI"
-  CREATEDBY: string; // user.email.split("@")[0].toUpperCase()
-  CREATEDDATE: string; // YYYY-MM-DD
+  SALESENQUIRYNO: number; 
+  SALESENQUIRYDATE: string; 
+  SERIALNO: number; 
+  ITEMCODE: string; 
+  ITEMDESCRIPTION: string; 
+  UOM: string; 
+  ITEMQTY: number; 
+  ITEMRATE: number; 
+  ITEMVAT: number; 
+  ITEMCURRENCY: string; 
+  ITEMAMOUNT: number; 
+  DIVISION: string; 
+  CREATEDBY: string; 
+  CREATEDDATE: string; 
   SUCCESS_STATUS: string,
   ERROR_STATUS: string,
 }
 
 export interface SalesEnquiryResponse {
-  message: string; // e.g., "Document Saved"
+  message: string; 
 }
 // --- END CHECKOUT ORDER SAVING TYPES ---
-
     
