@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Minus, Plus, Trash2, Loader2, ShoppingCart, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Minus, Plus, Trash2, Loader2, ShoppingCart, AlertTriangle, ShieldCheck, LogIn } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import { checkoutFormSchema, type CheckoutFormDataType, type SalesEnquiryHeaderPayload, type SalesEnquiryItemPayload } from '@/types';
@@ -106,21 +106,17 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (!authIsLoading && !isAuthenticated && isMounted) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to proceed to checkout.",
-        variant: "default",
-      });
-      openAuthModal();
-      router.replace('/'); 
-    }
-  }, [authIsLoading, isAuthenticated, router, openAuthModal, toast, isMounted]);
+    // Removed the effect that redirected or opened auth modal on initial load
+  }, []);
 
 
   useEffect(() => {
     const fetchEnquiryNo = async () => {
-      if (!isAuthenticated) return; 
+      // Only fetch if authenticated; if not, it's not needed until login
+      if (!isAuthenticated) {
+        setIsFetchingEnquiryNo(false); // Stop fetching if not logged in
+        return;
+      }
       setIsFetchingEnquiryNo(true);
       try {
         const response = await fetchNextSalesEnquiryNoAPI();
@@ -136,55 +132,64 @@ export default function CheckoutPage() {
         setIsFetchingEnquiryNo(false);
       }
     };
-    if(isMounted && isAuthenticated) {
+
+    if (isMounted && isAuthenticated) { // Only fetch if mounted and authenticated
       fetchEnquiryNo();
     } else if (isMounted && !isAuthenticated) {
-      setIsFetchingEnquiryNo(false); 
+      setIsFetchingEnquiryNo(false);
+      setNewSalesEnquiryNo(null); // Clear any old enquiry number if user logs out
     }
   }, [toast, isMounted, isAuthenticated]);
 
   useEffect(() => {
-    if (!isMounted || !user) {
-      form.reset({
-        fullName: '', phoneNumber: '',
-        deliveryAddress: '', city: '', pinCode: '', country: '',
-        modeOfPayment: undefined, salesEnquiryNotes: '', addressOption: 'new',
-      });
-      return;
-    }
+    if (!isMounted) return;
 
     const defaultValues: Partial<CheckoutFormDataType> = {
       modeOfPayment: form.getValues('modeOfPayment') || undefined,
       salesEnquiryNotes: form.getValues('salesEnquiryNotes') || '',
     };
 
-    if (addressOption === 'profile' && user.address) {
-      form.reset({
+    if (isAuthenticated && user) {
+      if (addressOption === 'profile' && user.address) {
+        form.reset({
+          ...defaultValues,
+          fullName: user.name || '',
+          phoneNumber: user.phoneNumber || '',
+          deliveryAddress: user.address.street || '', 
+          city: user.address.city || '', 
+          pinCode: user.address.pinCode || '', 
+          country: user.address.country || '', 
+          addressOption: 'profile',
+        });
+      } else { 
+        form.reset({
+          ...defaultValues,
+          fullName: user.name || '', 
+          phoneNumber: user.phoneNumber || '', 
+          deliveryAddress: form.getValues('deliveryAddress') || '', 
+          city: form.getValues('city') || '',
+          pinCode: form.getValues('pinCode') || '',
+          country: form.getValues('country') || '',
+          addressOption: 'new',
+        });
+      }
+    } else { // Not authenticated
+       form.reset({
         ...defaultValues,
-        fullName: user.name || '',
-        phoneNumber: user.phoneNumber || '',
-        deliveryAddress: user.address.street || '', // Store for payload, not editable in form
-        city: user.address.city || '', // Store for payload
-        pinCode: user.address.pinCode || '', // Store for payload
-        country: user.address.country || '', // Store for payload
-        addressOption: 'profile',
-      });
-    } else { // 'new' address option
-      form.reset({
-        ...defaultValues,
-        fullName: user.name || '', // Pre-fill but editable
-        phoneNumber: user.phoneNumber || '', // Pre-fill but editable
-        deliveryAddress: form.getValues('deliveryAddress') || '', // Keep user input if any
-        city: form.getValues('city') || '',
-        pinCode: form.getValues('pinCode') || '',
-        country: form.getValues('country') || '',
-        addressOption: 'new',
+        fullName: '', phoneNumber: '',
+        deliveryAddress: '', city: '', pinCode: '', country: '',
+        addressOption: 'new', // Default to new if not logged in
       });
     }
-  }, [isMounted, user, addressOption, form.reset, form.getValues]);
+  }, [isMounted, user, isAuthenticated, addressOption, form.reset, form.getValues]);
 
 
   const onFormSubmit = async (data: CheckoutFormDataType) => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      toast({ title: "Authentication Required", description: "Please log in to place your order." });
+      return;
+    }
     setIsConfirmOrderOpen(true);
   };
   
@@ -219,7 +224,7 @@ export default function CheckoutPage() {
       country: '',
     };
 
-    if (addressOption === 'profile' && user?.address) {
+    if (isAuthenticated && addressOption === 'profile' && user?.address) {
       deliveryDetails.deliveryAddress = user.address.street;
       deliveryDetails.city = user.address.city;
       deliveryDetails.pinCode = user.address.pinCode;
@@ -311,7 +316,7 @@ export default function CheckoutPage() {
   };
 
 
-  if (!isMounted || productStatus === 'loading' || (authIsLoading && !user) || (isAuthenticated && isFetchingEnquiryNo)) {
+  if (!isMounted || productStatus === 'loading' || (authIsLoading && !user && !isAuthenticated)) { // Adjusted condition
      return (
       <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -319,19 +324,6 @@ export default function CheckoutPage() {
       </div>
     );
   }
-   if (!isAuthenticated && isMounted && !authIsLoading) {
-    return (
-      <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h1 className="text-2xl font-bold mb-3">Authentication Required</h1>
-        <p className="text-muted-foreground mb-6 text-sm">
-          Please log in to proceed to checkout.
-        </p>
-        <Button onClick={openAuthModal} size="lg">Login / Sign Up</Button>
-      </div>
-    );
-  }
-
 
   if (productStatus === 'failed') {
     return (
@@ -359,6 +351,7 @@ export default function CheckoutPage() {
     );
   }
 
+  const formFieldsDisabled = !isAuthenticated || isPlacingOrder || authIsLoading;
 
   return (
     <>
@@ -437,7 +430,26 @@ export default function CheckoutPage() {
           </Card>
         </div>
 
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 space-y-6">
+          {!isAuthenticated && isMounted && !authIsLoading && (
+            <Card className="shadow-md">
+              <CardHeader className="p-4">
+                <CardTitle className="text-xl flex items-center">
+                  <LogIn className="mr-2 h-5 w-5 text-primary" />
+                  Log In to Continue
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Please log in or create an account to complete your order.
+                </p>
+                <Button onClick={openAuthModal} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm">
+                  Login / Sign Up
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-6">
               <Card className="shadow-md">
@@ -459,7 +471,7 @@ export default function CheckoutPage() {
                             }}
                             value={field.value || (user.address ? 'profile' : 'new')}
                             className="flex flex-col space-y-1"
-                            disabled={isPlacingOrder}
+                            disabled={formFieldsDisabled}
                           >
                             <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl>
@@ -495,7 +507,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={(addressOption === 'profile' && !!user?.name) || isPlacingOrder} className="h-9 text-sm" />
+                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={formFieldsDisabled || (isAuthenticated && addressOption === 'profile' && !!user?.name)} className="h-9 text-sm" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -508,13 +520,13 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Phone Number</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={(addressOption === 'profile' && !!user?.phoneNumber) || isPlacingOrder} className="h-9 text-sm" />
+                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={formFieldsDisabled || (isAuthenticated && addressOption === 'profile' && !!user?.phoneNumber)} className="h-9 text-sm" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
-                  {(addressOption === 'new' || (!user?.address && !isAuthenticated)) && (
+                  {(addressOption === 'new' || (!isAuthenticated && !user?.address)) && (
                     <>
                       <FormField
                         control={form.control}
@@ -523,7 +535,7 @@ export default function CheckoutPage() {
                           <FormItem>
                             <FormLabel className="text-sm">Street Address</FormLabel>
                             <FormControl>
-                              <Input placeholder="e.g. 123 Bakery St, Apt 4B" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                              <Input placeholder="e.g. 123 Bakery St, Apt 4B" {...field} disabled={formFieldsDisabled} className="h-9 text-sm" />
                             </FormControl>
                             <FormMessage className="text-xs" />
                           </FormItem>
@@ -536,7 +548,7 @@ export default function CheckoutPage() {
                           <FormItem>
                             <FormLabel className="text-sm">City</FormLabel>
                             <FormControl>
-                              <Input placeholder="Nairobi" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                              <Input placeholder="Nairobi" {...field} disabled={formFieldsDisabled} className="h-9 text-sm" />
                             </FormControl>
                             <FormMessage className="text-xs" />
                           </FormItem>
@@ -549,7 +561,7 @@ export default function CheckoutPage() {
                           <FormItem>
                             <FormLabel className="text-sm">Pin Code / Postal Code</FormLabel>
                             <FormControl>
-                              <Input placeholder="e.g. 00100" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                              <Input placeholder="e.g. 00100" {...field} disabled={formFieldsDisabled} className="h-9 text-sm" />
                             </FormControl>
                             <FormMessage className="text-xs" />
                           </FormItem>
@@ -562,7 +574,7 @@ export default function CheckoutPage() {
                           <FormItem>
                             <FormLabel className="text-sm">Country</FormLabel>
                             <FormControl>
-                              <Input placeholder="Kenya" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                              <Input placeholder="Kenya" {...field} disabled={formFieldsDisabled} className="h-9 text-sm" />
                             </FormControl>
                             <FormMessage className="text-xs" />
                           </FormItem>
@@ -577,7 +589,7 @@ export default function CheckoutPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm">Mode of Payment</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={isPlacingOrder}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={formFieldsDisabled}>
                           <FormControl>
                             <SelectTrigger className="h-9 text-sm">
                               <SelectValue placeholder="Select payment method" />
@@ -600,7 +612,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Order Notes (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Any special instructions for your order..." {...field} disabled={isPlacingOrder} className="text-sm min-h-[60px]" />
+                          <Textarea placeholder="Any special instructions for your order..." {...field} disabled={formFieldsDisabled} className="text-sm min-h-[60px]" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -612,7 +624,7 @@ export default function CheckoutPage() {
                     type="submit" 
                     size="default" 
                     className="w-full text-sm py-2.5 bg-accent hover:bg-accent/90 text-accent-foreground" 
-                    disabled={isPlacingOrder || form.formState.isSubmitting || cartItemsWithDetails.length === 0 || authIsLoading || isFetchingEnquiryNo || !newSalesEnquiryNo || !isAuthenticated}
+                    disabled={formFieldsDisabled || form.formState.isSubmitting || cartItemsWithDetails.length === 0 || (isAuthenticated && isFetchingEnquiryNo) || (isAuthenticated && !newSalesEnquiryNo) }
                   >
                     {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
                     Confirm & Place Order (KES {totalAmountInclVat.toLocaleString()})
@@ -645,6 +657,4 @@ export default function CheckoutPage() {
     </>
   );
 }
-
     
-
