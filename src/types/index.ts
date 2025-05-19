@@ -136,7 +136,7 @@ export interface Order {
   totalAmount: number;
   orderDate: string; 
   estimatedTime?: string; 
-  deliveryDetails?: CheckoutFormData; 
+  deliveryDetails?: CheckoutFormDataType; // Changed from CheckoutFormData to CheckoutFormDataType
 }
 // --- END ORDER TYPES ---
 
@@ -152,12 +152,20 @@ export interface CartItemWithProductDetails extends Product {
 }
 
 
-export interface CheckoutFormData {
-  fullName: string; 
-  phoneNumber: string; 
-  deliveryAddress: string; 
-  pinCode: string; 
-}
+export const checkoutFormSchema = z.object({
+  fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
+  phoneNumber: z.string().regex(/^\+?[0-9]{10,14}$/, { message: "Invalid phone number format. e.g. +254712345678" }),
+  deliveryAddress: z.string().min(10, { message: "Street address must be at least 10 characters." }),
+  city: z.string().min(2, { message: "City must be at least 2 characters." }),
+  pinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code. e.g. 00100" }),
+  country: z.string().min(2, { message: "Country must be at least 2 characters." }),
+  modeOfPayment: z.enum(['pay_on_delivery', 'online', 'credit_pay_later'], { required_error: "Please select a mode of payment." }),
+  salesEnquiryNotes: z.string().max(250, { message: "Notes cannot exceed 250 characters." }).optional().or(z.literal('')),
+  addressOption: z.enum(['profile', 'new']).optional(), // To manage address choice
+});
+
+export type CheckoutFormDataType = z.infer<typeof checkoutFormSchema>; // Renamed to avoid conflict
+
 
 export interface TimelineEvent {
   year: string;
@@ -289,7 +297,7 @@ export interface SalesEnquiryHeaderPayload {
   SALESENQUIRYDATE: string; // YYYY-MM-DD
   SALESENQUIRYVEHICLE: string; // ""
   DIVISION: string; // "NAIROBI"
-  SALESENQUIRYNOTES: string; // "" or from form
+  SALESENQUIRYNOTES: string; // from form or ""
   CREATEDBY: string; // user.email.split("@")[0].toUpperCase()
   CREATEDDATE: string; // YYYY-MM-DD
   CREATEDTIME: string; // HH:MM:SS
@@ -297,12 +305,12 @@ export interface SalesEnquiryHeaderPayload {
   VATAMOUNT: number;
   AMTOUNTINCLUSIVEVAT: number;
   CURRENCYCODE: string; // "KSH"
-  MODEOFPAY: string; // "ONLINE" (or from form if you add selector)
+  MODEOFPAY: string; // from form e.g. "ONLINE", "PAY ON DELIVERY", "CREDIT PAY LATER"
   CLIENTNAME: string; // checkoutFormData.fullName or user.name
   DELIVERYADDRESS: string; // checkoutFormData.deliveryAddress
   CLIENTEMAIL: string; // user.email
-  CLIENTCOUNTRY: string; // user.address.country or checkoutFormData
-  CLIENTCITY: string; // user.address.city or checkoutFormData
+  CLIENTCOUNTRY: string; // checkoutFormData.country
+  CLIENTCITY: string; // checkoutFormData.city
   CLIENTPHONENUMBER: string; // checkoutFormData.phoneNumber
   CARTNO: number; // newSalesEnquiryNo
   DELIVERYPROVIDED: number; // 0
@@ -335,3 +343,5 @@ export interface SalesEnquiryResponse {
   message: string; // e.g., "Document Saved"
 }
 // --- END CHECKOUT ORDER SAVING TYPES ---
+
+    

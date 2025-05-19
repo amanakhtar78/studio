@@ -6,15 +6,16 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/context/auth-context';
+import { useAuthModal } from '@/hooks/use-auth-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Minus, Plus, Trash2, Loader2, ShoppingCart } from 'lucide-react';
+import { Minus, Plus, Trash2, Loader2, ShoppingCart, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
-import * as z from 'zod';
-import type { CheckoutFormData, SalesEnquiryHeaderPayload, SalesEnquiryItemPayload } from '@/types';
+import { checkoutFormSchema, type CheckoutFormDataType, type SalesEnquiryHeaderPayload, type SalesEnquiryItemPayload } from '@/types';
 import { useEffect, useState, useMemo } from 'react';
 import { format } from 'date-fns';
 
@@ -28,18 +29,13 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { fetchNextSalesEnquiryNoAPI, saveSalesEnquiryHeaderAPI, saveSalesEnquiryItemAPI } from '@/services/api';
 
-
-const checkoutFormSchema = z.object({
-  fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
-  phoneNumber: z.string().regex(/^\+?[0-9]{10,14}$/, { message: "Invalid phone number format. e.g. +254712345678" }),
-  deliveryAddress: z.string().min(10, { message: "Delivery address must be at least 10 characters." }),
-  pinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code. e.g. 00100" }),
-});
 
 export default function CheckoutPage() {
   const { 
@@ -49,6 +45,7 @@ export default function CheckoutPage() {
     getCartItemsWithDetails, 
   } = useCart();
   const { user, isAuthenticated, isLoading: authIsLoading } = useAuth();
+  const { openModal: openAuthModal } = useAuthModal();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -82,27 +79,48 @@ export default function CheckoutPage() {
   }, [productStatus, allApiProducts, cartItemsWithDetails]);
 
 
-  const form = useForm<CheckoutFormData>({
+  const form = useForm<CheckoutFormDataType>({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
       fullName: '',
       phoneNumber: '',
       deliveryAddress: '',
+      city: '',
       pinCode: '',
+      country: '',
+      modeOfPayment: undefined,
+      salesEnquiryNotes: '',
+      addressOption: 'profile',
     },
   });
 
-  const [useProfileAddress, setUseProfileAddress] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState(false);
   const placeholderImage = "https://placehold.co/64x64.png";
   const [newSalesEnquiryNo, setNewSalesEnquiryNo] = useState<string | null>(null);
   const [isFetchingEnquiryNo, setIsFetchingEnquiryNo] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [isConfirmOrderOpen, setIsConfirmOrderOpen] = useState(false);
+
+  const addressOption = form.watch('addressOption');
 
 
   useEffect(() => {
     setIsMounted(true);
+    if (!authIsLoading && !isAuthenticated && isMounted) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to proceed to checkout.",
+        variant: "default",
+      });
+      openAuthModal();
+      router.replace('/'); // Redirect to home, modal will pop up
+    }
+  }, [authIsLoading, isAuthenticated, router, openAuthModal, toast, isMounted]);
+
+
+  useEffect(() => {
     const fetchEnquiryNo = async () => {
+      if (!isAuthenticated) return; // Don't fetch if not authenticated
       setIsFetchingEnquiryNo(true);
       try {
         const response = await fetchNextSalesEnquiryNoAPI();
@@ -118,51 +136,61 @@ export default function CheckoutPage() {
         setIsFetchingEnquiryNo(false);
       }
     };
-    fetchEnquiryNo();
-  }, [toast]);
-
-  useEffect(() => {
-    if (isMounted && isAuthenticated && user?.address) {
-      setUseProfileAddress(true);
-    } else if (isMounted) {
-      setUseProfileAddress(false);
+    if(isMounted && isAuthenticated) {
+      fetchEnquiryNo();
+    } else if (isMounted && !isAuthenticated) {
+      setIsFetchingEnquiryNo(false); // Not fetching if not auth
     }
-  }, [isMounted, isAuthenticated, user]); 
+  }, [toast, isMounted, isAuthenticated]);
 
   useEffect(() => {
-    if (!isMounted) return;
+    if (!isMounted || !user) {
+      form.reset({ // Reset to empty if no user or not authenticated
+          fullName: '', phoneNumber: '', deliveryAddress: '', city: '', pinCode: '', country: '',
+          modeOfPayment: undefined, salesEnquiryNotes: '', addressOption: 'new'
+      });
+      return;
+    }
 
-    if (isAuthenticated && user) {
-      const baseUserDetails = {
-        fullName: user.name || '',
-        phoneNumber: user.phoneNumber || '',
-      };
-      if (useProfileAddress && user.address) {
-        form.reset({
-          ...baseUserDetails,
-          deliveryAddress: user.address.street || '',
-          pinCode: user.address.pinCode || '',
-        });
-      } else {
-        form.reset({
-          ...baseUserDetails,
-          deliveryAddress: '',
-          pinCode: '',
-        });
-      }
-    } else {
+    const defaultFormValues: Partial<CheckoutFormDataType> = {
+      fullName: user.name || '',
+      phoneNumber: user.phoneNumber || '',
+      salesEnquiryNotes: '', // Keep notes empty by default
+      modeOfPayment: undefined, // Keep mode of payment undefined by default
+    };
+
+    if (user.address && addressOption === 'profile') {
       form.reset({
-        fullName: '',
-        phoneNumber: '',
+        ...defaultFormValues,
+        deliveryAddress: user.address.street || '',
+        city: user.address.city || '',
+        pinCode: user.address.pinCode || '',
+        country: user.address.country || '',
+        addressOption: 'profile',
+      });
+    } else { // 'new' address option or no profile address
+      form.reset({
+        ...defaultFormValues,
         deliveryAddress: '',
+        city: '',
         pinCode: '',
+        country: '',
+        addressOption: 'new',
       });
     }
-  }, [isMounted, user, isAuthenticated, useProfileAddress, form]);
+  }, [isMounted, user, addressOption, form]);
 
 
-  const handlePlaceOrder = async (data: CheckoutFormData) => {
-    if (!user || !user.email) { // Guard clause for user and user.email
+  const onFormSubmit = async (data: CheckoutFormDataType) => {
+    // This function is now just to trigger the confirmation dialog
+    setIsConfirmOrderOpen(true);
+  };
+  
+  const handlePlaceOrder = async () => {
+    setIsConfirmOrderOpen(false); // Close dialog first
+    const data = form.getValues(); // Get current form values
+
+    if (!user || !user.email) { 
       toast({ title: 'Authentication Error', description: 'Please log in to place an order.', variant: 'destructive' });
       return;
     }
@@ -179,7 +207,7 @@ export default function CheckoutPage() {
     const currentDate = new Date();
     const datePass = format(currentDate, 'yyyy-MM-dd');
     const timePass = format(currentDate, 'HH:mm:ss');
-
+    
     const headerPayload: SalesEnquiryHeaderPayload = {
       SALESENQUIRYNO: Number(newSalesEnquiryNo),
       SALESENQUIRYITEMSSERVICE: 0,
@@ -187,8 +215,8 @@ export default function CheckoutPage() {
       REFFROM: "ZAHARASWEETROOLE",
       SALESENQUIRYDATE: datePass,
       SALESENQUIRYVEHICLE: "",
-      DIVISION: 'NAIROBI',
-      SALESENQUIRYNOTES: "", // Add a field for notes if needed
+      DIVISION: 'NAIROBI', // Kept as hardcoded
+      SALESENQUIRYNOTES: data.salesEnquiryNotes || "",
       CREATEDBY: user.email.split("@")[0].toUpperCase(),
       CREATEDDATE: datePass,
       CREATEDTIME: timePass,
@@ -196,12 +224,12 @@ export default function CheckoutPage() {
       VATAMOUNT: totalVatAmount,
       AMTOUNTINCLUSIVEVAT: totalAmountInclVat,
       CURRENCYCODE: "KSH",
-      MODEOFPAY: "ONLINE", // Or implement selection
+      MODEOFPAY: data.modeOfPayment,
       CLIENTNAME: data.fullName,
       DELIVERYADDRESS: data.deliveryAddress,
       CLIENTEMAIL: user.email,
-      CLIENTCOUNTRY: user.address?.country || "Kenya",
-      CLIENTCITY: user.address?.city || data.deliveryAddress.split(',').pop()?.trim() || "Nairobi", // Basic city extraction
+      CLIENTCOUNTRY: data.country,
+      CLIENTCITY: data.city,
       CLIENTPHONENUMBER: data.phoneNumber,
       CARTNO: Number(newSalesEnquiryNo),
       DELIVERYPROVIDED: 0,
@@ -216,11 +244,10 @@ export default function CheckoutPage() {
       if (!headerResponse.data || !headerResponse.data.message.toLowerCase().includes('document saved')) {
         throw new Error(headerResponse.data.message || 'Failed to save order header.');
       }
-      // toast({ title: 'Order Header Saved', description: 'Processing items...', variant: 'default' }); // Can be a bit noisy
 
       for (let i = 0; i < cartItemsWithDetails.length; i++) {
         const item = cartItemsWithDetails[i];
-        const lineItemRateExclVat = item.price * item.cartQuantity; // Correct calculation for line item rate
+        const lineItemRateExclVat = item.price * item.cartQuantity;
         const lineItemVat = item.ITEM_VATABLE?.toUpperCase() === 'YES' ? lineItemRateExclVat * 0.16 : 0;
         const lineItemAmountInclVat = lineItemRateExclVat + lineItemVat;
 
@@ -228,14 +255,14 @@ export default function CheckoutPage() {
           SALESENQUIRYNO: Number(newSalesEnquiryNo),
           SALESENQUIRYDATE: datePass,
           SERIALNO: i + 1,
-          ITEMCODE: item.id, // product.id is ITEM CODE
+          ITEMCODE: item.id,
           ITEMDESCRIPTION: item.title,
           UOM: item.ITEM_BASE_UOM || "PCS",
           ITEMQTY: item.cartQuantity,
-          ITEMRATE: lineItemRateExclVat, // Rate for the total quantity of this item, excluding VAT
+          ITEMRATE: lineItemRateExclVat, 
           ITEMVAT: lineItemVat,
           ITEMCURRENCY: "KSH",
-          ITEMAMOUNT: lineItemAmountInclVat, // Total amount for this line item, including VAT
+          ITEMAMOUNT: lineItemAmountInclVat, 
           DIVISION: 'NAIROBI',
           CREATEDBY: user.email.split("@")[0].toUpperCase(),
           CREATEDDATE: datePass, 
@@ -250,7 +277,7 @@ export default function CheckoutPage() {
 
       toast({ title: 'Order Placed Successfully!', description: `Your order #${newSalesEnquiryNo} is confirmed.`, variant: 'default' });
       clearCart();
-      router.push(`/`);
+      router.push(`/my-orders/${newSalesEnquiryNo}?new=true`);
 
     } catch (error: any) {
       console.error("Error placing order:", error);
@@ -261,7 +288,7 @@ export default function CheckoutPage() {
   };
 
 
-  if (!isMounted || productStatus === 'loading' || (authIsLoading && !user) || isFetchingEnquiryNo) {
+  if (!isMounted || productStatus === 'loading' || (authIsLoading && !user) || (isAuthenticated && isFetchingEnquiryNo)) {
      return (
       <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -269,10 +296,24 @@ export default function CheckoutPage() {
       </div>
     );
   }
+   if (!isAuthenticated && isMounted && !authIsLoading) {
+    return (
+      <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h1 className="text-2xl font-bold mb-3">Authentication Required</h1>
+        <p className="text-muted-foreground mb-6 text-sm">
+          Please log in to proceed to checkout.
+        </p>
+        <Button onClick={openAuthModal} size="lg">Login / Sign Up</Button>
+      </div>
+    );
+  }
+
 
   if (productStatus === 'failed') {
     return (
       <div className="container max-w-screen-lg mx-auto px-2 md:px-4 py-8 text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <h1 className="text-2xl font-bold mb-4">Error Loading Products</h1>
         <p className="text-muted-foreground mb-6 text-sm">Could not load product details. Please try again later.</p>
         <Button asChild size="sm" onClick={() => router.push('/')}>
@@ -297,6 +338,7 @@ export default function CheckoutPage() {
 
 
   return (
+    <>
     <div className="container max-w-screen-xl mx-auto px-2 md:px-4 py-4 md:py-6">
       <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-6">Checkout</h1>
       <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
@@ -373,44 +415,53 @@ export default function CheckoutPage() {
         </div>
 
         <div className="md:col-span-1">
-          <Card className="shadow-md">
-            <CardHeader className="p-4">
-              <CardTitle className="text-xl">Delivery Details</CardTitle>
-              <CardDescription className="text-xs">
-                {isAuthenticated && user?.address ? 'Choose your delivery address or enter a new one.' : 'Please fill in your delivery information.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4">
-              {isAuthenticated && user?.address && (
-                <RadioGroup
-                  value={useProfileAddress ? "profile" : "new"}
-                  onValueChange={(value) => {
-                    setUseProfileAddress(value === "profile");
-                  }}
-                  className="mb-4"
-                  disabled={isPlacingOrder}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="profile" id="rProfileAddress" />
-                    <Label htmlFor="rProfileAddress" className="cursor-pointer text-sm">Use my saved address:</Label>
-                  </div>
-                  {useProfileAddress && (
-                    <Card className="bg-muted/50 p-2.5 text-xs ml-6 my-1.5 border-border/70 shadow-sm">
-                      <p><strong>{user.name}</strong></p>
-                      <p>{user.phoneNumber || 'No phone on file'}</p>
-                      <p>{user.address.street}, {user.address.city}</p>
-                      <p>{user.address.pinCode} {user.address.country && `(${user.address.country})`} <span className="capitalize">({user.address.addressType})</span></p>
-                    </Card>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-6">
+              <Card className="shadow-md">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-xl">Delivery & Payment</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  {isAuthenticated && user?.address && (
+                    <FormField
+                      control={form.control}
+                      name="addressOption"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-sm">Delivery Address Option</FormLabel>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                            disabled={isPlacingOrder}
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="profile" />
+                              </FormControl>
+                              <FormLabel className="font-normal text-sm cursor-pointer">Use my saved address</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="new" />
+                              </FormControl>
+                              <FormLabel className="font-normal text-sm cursor-pointer">Enter a new delivery address</FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                          {field.value === 'profile' && user.address && (
+                            <Card className="bg-muted/50 p-2.5 text-xs mt-1.5 border-border/70 shadow-sm">
+                              <p><strong>{user.name}</strong></p>
+                              <p>{user.phoneNumber || 'No phone on file'}</p>
+                              <p>{user.address.street}, {user.address.city}</p>
+                              <p>{user.address.pinCode} {user.address.country && `(${user.address.country})`} <span className="capitalize">({user.address.addressType})</span></p>
+                            </Card>
+                          )}
+                           <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                  <div className="flex items-center space-x-2 mt-1.5">
-                    <RadioGroupItem value="new" id="rNewAddress" />
-                    <Label htmlFor="rNewAddress" className="cursor-pointer text-sm">Enter a new delivery address</Label>
-                  </div>
-                </RadioGroup>
-              )}
 
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handlePlaceOrder)} className="space-y-4">
                   <FormField
                     control={form.control}
                     name="fullName"
@@ -418,7 +469,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={(useProfileAddress && !!user?.name) || isPlacingOrder} className="h-9 text-sm" />
+                          <Input placeholder="e.g. Zahra Ali" {...field} disabled={(addressOption === 'profile' && !!user?.name) || isPlacingOrder} className="h-9 text-sm" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
@@ -431,53 +482,142 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel className="text-sm">Phone Number</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={(useProfileAddress && !!user?.phoneNumber) || isPlacingOrder} className="h-9 text-sm" />
+                          <Input type="tel" placeholder="e.g. +254712345678" {...field} disabled={(addressOption === 'profile' && !!user?.phoneNumber) || isPlacingOrder} className="h-9 text-sm" />
                         </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                  {addressOption === 'new' || !user?.address && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="deliveryAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Street Address</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. 123 Bakery St, Apt 4B" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                       <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">City</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Nairobi" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="pinCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Pin Code / Postal Code</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. 00100" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Country</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Kenya" {...field} disabled={isPlacingOrder} className="h-9 text-sm" />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
+                  
+                  <FormField
+                    control={form.control}
+                    name="modeOfPayment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm">Mode of Payment</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isPlacingOrder}>
+                          <FormControl>
+                            <SelectTrigger className="h-9 text-sm">
+                              <SelectValue placeholder="Select payment method" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="pay_on_delivery">Pay on Delivery</SelectItem>
+                            <SelectItem value="online">Online Payment</SelectItem>
+                            <SelectItem value="credit_pay_later">Credit Pay Later</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
                   <FormField
                     control={form.control}
-                    name="deliveryAddress"
+                    name="salesEnquiryNotes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm">Delivery Address</FormLabel>
+                        <FormLabel className="text-sm">Order Notes (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. 123 Bakery St, Apt 4B, Nairobi" {...field} disabled={(useProfileAddress && !!user?.address?.street) || isPlacingOrder} className="h-9 text-sm" />
+                          <Textarea placeholder="Any special instructions for your order..." {...field} disabled={isPlacingOrder} className="text-sm min-h-[60px]" />
                         </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="pinCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Pin Code / Postal Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. 00100" {...field} disabled={(useProfileAddress && !!user?.address?.pinCode) || isPlacingOrder} className="h-9 text-sm" />
-                        </FormControl>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
-                  <Button 
+                </CardContent>
+                <CardFooter>
+                   <Button 
                     type="submit" 
                     size="default" 
                     className="w-full text-sm py-2.5 bg-accent hover:bg-accent/90 text-accent-foreground" 
-                    disabled={isPlacingOrder || form.formState.isSubmitting || cartItemsWithDetails.length === 0 || authIsLoading || isFetchingEnquiryNo || !newSalesEnquiryNo}
+                    disabled={isPlacingOrder || form.formState.isSubmitting || cartItemsWithDetails.length === 0 || authIsLoading || isFetchingEnquiryNo || !newSalesEnquiryNo || !isAuthenticated}
                   >
-                    {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Place Order (KES {totalAmountInclVat.toLocaleString()})
+                    {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                    Confirm & Place Order (KES {totalAmountInclVat.toLocaleString()})
                   </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                </CardFooter>
+              </Card>
+            </form>
+          </Form>
         </div>
       </div>
     </div>
+
+    <AlertDialog open={isConfirmOrderOpen} onOpenChange={setIsConfirmOrderOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Your Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to place this order with the total amount of KES {totalAmountInclVat.toLocaleString()}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsConfirmOrderOpen(false)} disabled={isPlacingOrder}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePlaceOrder} disabled={isPlacingOrder} className="bg-primary hover:bg-primary/90">
+              {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Yes, Place Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
+
+    
