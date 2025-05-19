@@ -155,16 +155,48 @@ export interface CartItemWithProductDetails extends Product {
 export const checkoutFormSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
   phoneNumber: z.string().regex(/^\+?[0-9]{10,14}$/, { message: "Invalid phone number format. e.g. +254712345678" }),
-  deliveryAddress: z.string().min(10, { message: "Street address must be at least 10 characters." }),
-  city: z.string().min(2, { message: "City must be at least 2 characters." }),
-  pinCode: z.string().regex(/^[0-9]{4,6}$/, { message: "Invalid pin code. e.g. 00100" }),
-  country: z.string().min(2, { message: "Country must be at least 2 characters." }),
+  // Delivery address fields are now validated based on addressOption
+  deliveryAddress: z.string().optional(), 
+  city: z.string().optional(),
+  pinCode: z.string().optional(), 
+  country: z.string().optional(),
   modeOfPayment: z.enum(['pay_on_delivery', 'online', 'credit_pay_later'], { required_error: "Please select a mode of payment." }),
   salesEnquiryNotes: z.string().max(250, { message: "Notes cannot exceed 250 characters." }).optional().or(z.literal('')),
-  addressOption: z.enum(['profile', 'new']).optional(), // To manage address choice
+  addressOption: z.enum(['profile', 'new']).optional(), 
+}).superRefine((data, ctx) => {
+  if (data.addressOption === 'new') {
+    if (!data.deliveryAddress || data.deliveryAddress.length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Street address must be at least 10 characters.",
+        path: ["deliveryAddress"],
+      });
+    }
+    if (!data.city || data.city.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "City must be at least 2 characters.",
+        path: ["city"],
+      });
+    }
+    if (!data.pinCode || !/^[0-9]{4,6}$/.test(data.pinCode)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid pin code. e.g. 00100",
+        path: ["pinCode"],
+      });
+    }
+     if (!data.country || data.country.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Country must be at least 2 characters.",
+        path: ["country"],
+      });
+    }
+  }
 });
 
-export type CheckoutFormDataType = z.infer<typeof checkoutFormSchema>; // Renamed to avoid conflict
+export type CheckoutFormDataType = z.infer<typeof checkoutFormSchema>;
 
 
 export interface TimelineEvent {

@@ -30,7 +30,7 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
       country: '',
       modeOfPayment: undefined,
       salesEnquiryNotes: '',
-      addressOption: 'profile',
+      addressOption: user?.address ? 'profile' : 'new',
     },
   });
 
@@ -113,14 +113,14 @@ export default function CheckoutPage() {
         variant: "default",
       });
       openAuthModal();
-      router.replace('/'); // Redirect to home, modal will pop up
+      router.replace('/'); 
     }
   }, [authIsLoading, isAuthenticated, router, openAuthModal, toast, isMounted]);
 
 
   useEffect(() => {
     const fetchEnquiryNo = async () => {
-      if (!isAuthenticated) return; // Don't fetch if not authenticated
+      if (!isAuthenticated) return; 
       setIsFetchingEnquiryNo(true);
       try {
         const response = await fetchNextSalesEnquiryNoAPI();
@@ -139,56 +139,58 @@ export default function CheckoutPage() {
     if(isMounted && isAuthenticated) {
       fetchEnquiryNo();
     } else if (isMounted && !isAuthenticated) {
-      setIsFetchingEnquiryNo(false); // Not fetching if not auth
+      setIsFetchingEnquiryNo(false); 
     }
   }, [toast, isMounted, isAuthenticated]);
 
   useEffect(() => {
     if (!isMounted || !user) {
-      form.reset({ // Reset to empty if no user or not authenticated
-          fullName: '', phoneNumber: '', deliveryAddress: '', city: '', pinCode: '', country: '',
-          modeOfPayment: undefined, salesEnquiryNotes: '', addressOption: 'new'
+      form.reset({
+        fullName: '', phoneNumber: '',
+        deliveryAddress: '', city: '', pinCode: '', country: '',
+        modeOfPayment: undefined, salesEnquiryNotes: '', addressOption: 'new',
       });
       return;
     }
 
-    const defaultFormValues: Partial<CheckoutFormDataType> = {
-      fullName: user.name || '',
-      phoneNumber: user.phoneNumber || '',
-      salesEnquiryNotes: '', // Keep notes empty by default
-      modeOfPayment: undefined, // Keep mode of payment undefined by default
+    const defaultValues: Partial<CheckoutFormDataType> = {
+      modeOfPayment: form.getValues('modeOfPayment') || undefined,
+      salesEnquiryNotes: form.getValues('salesEnquiryNotes') || '',
     };
 
-    if (user.address && addressOption === 'profile') {
+    if (addressOption === 'profile' && user.address) {
       form.reset({
-        ...defaultFormValues,
-        deliveryAddress: user.address.street || '',
-        city: user.address.city || '',
-        pinCode: user.address.pinCode || '',
-        country: user.address.country || '',
+        ...defaultValues,
+        fullName: user.name || '',
+        phoneNumber: user.phoneNumber || '',
+        deliveryAddress: user.address.street || '', // Store for payload, not editable in form
+        city: user.address.city || '', // Store for payload
+        pinCode: user.address.pinCode || '', // Store for payload
+        country: user.address.country || '', // Store for payload
         addressOption: 'profile',
       });
-    } else { // 'new' address option or no profile address
+    } else { // 'new' address option
       form.reset({
-        ...defaultFormValues,
-        deliveryAddress: '',
-        city: '',
-        pinCode: '',
-        country: '',
+        ...defaultValues,
+        fullName: user.name || '', // Pre-fill but editable
+        phoneNumber: user.phoneNumber || '', // Pre-fill but editable
+        deliveryAddress: form.getValues('deliveryAddress') || '', // Keep user input if any
+        city: form.getValues('city') || '',
+        pinCode: form.getValues('pinCode') || '',
+        country: form.getValues('country') || '',
         addressOption: 'new',
       });
     }
-  }, [isMounted, user, addressOption, form]);
+  }, [isMounted, user, addressOption, form.reset, form.getValues]);
 
 
   const onFormSubmit = async (data: CheckoutFormDataType) => {
-    // This function is now just to trigger the confirmation dialog
     setIsConfirmOrderOpen(true);
   };
   
   const handlePlaceOrder = async () => {
-    setIsConfirmOrderOpen(false); // Close dialog first
-    const data = form.getValues(); // Get current form values
+    setIsConfirmOrderOpen(false); 
+    const data = form.getValues(); 
 
     if (!user || !user.email) { 
       toast({ title: 'Authentication Error', description: 'Please log in to place an order.', variant: 'destructive' });
@@ -208,6 +210,27 @@ export default function CheckoutPage() {
     const datePass = format(currentDate, 'yyyy-MM-dd');
     const timePass = format(currentDate, 'HH:mm:ss');
     
+    let deliveryDetails = {
+      fullName: data.fullName,
+      phoneNumber: data.phoneNumber,
+      deliveryAddress: '',
+      city: '',
+      pinCode: '',
+      country: '',
+    };
+
+    if (addressOption === 'profile' && user?.address) {
+      deliveryDetails.deliveryAddress = user.address.street;
+      deliveryDetails.city = user.address.city;
+      deliveryDetails.pinCode = user.address.pinCode;
+      deliveryDetails.country = user.address.country || '';
+    } else {
+      deliveryDetails.deliveryAddress = data.deliveryAddress || '';
+      deliveryDetails.city = data.city || '';
+      deliveryDetails.pinCode = data.pinCode || '';
+      deliveryDetails.country = data.country || '';
+    }
+
     const headerPayload: SalesEnquiryHeaderPayload = {
       SALESENQUIRYNO: Number(newSalesEnquiryNo),
       SALESENQUIRYITEMSSERVICE: 0,
@@ -215,7 +238,7 @@ export default function CheckoutPage() {
       REFFROM: "ZAHARASWEETROOLE",
       SALESENQUIRYDATE: datePass,
       SALESENQUIRYVEHICLE: "",
-      DIVISION: 'NAIROBI', // Kept as hardcoded
+      DIVISION: 'NAIROBI', 
       SALESENQUIRYNOTES: data.salesEnquiryNotes || "",
       CREATEDBY: user.email.split("@")[0].toUpperCase(),
       CREATEDDATE: datePass,
@@ -225,12 +248,12 @@ export default function CheckoutPage() {
       AMTOUNTINCLUSIVEVAT: totalAmountInclVat,
       CURRENCYCODE: "KSH",
       MODEOFPAY: data.modeOfPayment,
-      CLIENTNAME: data.fullName,
-      DELIVERYADDRESS: data.deliveryAddress,
+      CLIENTNAME: deliveryDetails.fullName,
+      DELIVERYADDRESS: deliveryDetails.deliveryAddress,
       CLIENTEMAIL: user.email,
-      CLIENTCOUNTRY: data.country,
-      CLIENTCITY: data.city,
-      CLIENTPHONENUMBER: data.phoneNumber,
+      CLIENTCOUNTRY: deliveryDetails.country,
+      CLIENTCITY: deliveryDetails.city,
+      CLIENTPHONENUMBER: deliveryDetails.phoneNumber,
       CARTNO: Number(newSalesEnquiryNo),
       DELIVERYPROVIDED: 0,
       DELIVERYROUTE: 0,
@@ -430,8 +453,11 @@ export default function CheckoutPage() {
                         <FormItem className="space-y-2">
                           <FormLabel className="text-sm">Delivery Address Option</FormLabel>
                           <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              form.setValue('addressOption', value as 'profile' | 'new');
+                            }}
+                            value={field.value || (user.address ? 'profile' : 'new')}
                             className="flex flex-col space-y-1"
                             disabled={isPlacingOrder}
                           >
@@ -488,7 +514,7 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
-                  {addressOption === 'new' || !user?.address && (
+                  {(addressOption === 'new' || (!user?.address && !isAuthenticated)) && (
                     <>
                       <FormField
                         control={form.control}
@@ -551,7 +577,7 @@ export default function CheckoutPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm">Mode of Payment</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isPlacingOrder}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isPlacingOrder}>
                           <FormControl>
                             <SelectTrigger className="h-9 text-sm">
                               <SelectValue placeholder="Select payment method" />
