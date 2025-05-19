@@ -1,19 +1,16 @@
 
 'use client';
-import type { AdminProduct, UserSignupPayload, UserSignupResponse, ApiUserDetail, NextPurchaseOrderNumberResponse, SalesEnquiryHeaderPayload, SalesEnquiryItemPayload, SalesEnquiryResponse, ApiOrderHeader } from '@/types';
+import type { AdminProduct, UserSignupPayload, UserSignupResponse, ApiUserDetail, NextPurchaseOrderNumberResponse, SalesEnquiryHeaderPayload, SalesEnquiryItemPayload, SalesEnquiryResponse, ApiOrderHeader, ApiOrderItemDetail } from '@/types';
 import axios from 'axios';
 
-// This apiClient is for public-facing API calls
 const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Ensure this is the latest, correct token.
 const HARDCODED_SESSION_TOKEN = "MjU3OTU0ZTAxNWJlNTNkN2M5MTE2MTI3NzM3YzhmZDY6N2RhZWE2NmNhMzRjYzIyMzQ1OWU0NjAwODI4NDVmNzU1NmUwMmM0MjdjMGQ3MTMxYWRkZDE4NDU4NTI5OWIwMy8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjplZGZlNDY3M2M0YzQ4MGVjYzg1NjFmZTM1MDFmZTI2NS8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3MjQ3YmZmOWMxZWEyMWRkYTQwZDA1OGU2ZTM0MDAyNi8yNTc5NTRlMDE1YmU1M2Q3YzkxMTYxMjc3MzdjOGZkNjo3YjYyZjgxMTA4ZjI4NzRjNDRiM2EwZWMwNGVlYzQzNw==";
 
-// Fetches products from viewname=792 for public display
 export const fetchProductsAPI = () => {
   return apiClient.get<AdminProduct[]>('https://devapi.tech23.net/global/globalViewHandler?viewname=792', {
     headers: {
@@ -22,7 +19,6 @@ export const fetchProductsAPI = () => {
   });
 };
 
-// API for User Signup (SP 128)
 export const userSignupAPI = (payload: UserSignupPayload) => {
   return apiClient.post<UserSignupResponse>(
     'https://devapi.tech23.net/global/globalSPHandler?spname=128', 
@@ -36,7 +32,6 @@ export const userSignupAPI = (payload: UserSignupPayload) => {
   );
 };
 
-// API to check if user exists (View 610 by Email)
 export const checkUserExistsAPI = (email: string) => {
   return apiClient.get<ApiUserDetail[]>( 
     `https://devapi.tech23.net/global/globalViewHandler?viewname=610&EMAILADDRESS=${encodeURIComponent(email)}`,
@@ -48,7 +43,6 @@ export const checkUserExistsAPI = (email: string) => {
   );
 };
 
-// API to fetch authenticated user details (View 610 by Email and Password)
 export const fetchAuthenticatedUserAPI = (email: string, password?: string) => { 
   let url = `https://devapi.tech23.net/global/globalViewHandler?viewname=610&EMAILADDRESS=${encodeURIComponent(email)}`;
   if (password) {
@@ -61,7 +55,6 @@ export const fetchAuthenticatedUserAPI = (email: string, password?: string) => {
   });
 };
 
-// --- START CHECKOUT ORDER SAVING API FUNCTIONS ---
 export const fetchNextSalesEnquiryNoAPI = () => {
   return apiClient.get<NextPurchaseOrderNumberResponse>(
     `https://devapi.tech23.net/global/globalViewHandler?viewname=408`,
@@ -98,9 +91,7 @@ export const saveSalesEnquiryItemAPI = (payload: SalesEnquiryItemPayload) => {
     }
   );
 };
-// --- END CHECKOUT ORDER SAVING API FUNCTIONS ---
 
-// --- START ORDER HISTORY API ---
 export const fetchOrderHistoryAPI = (clientEmail: string) => {
   return apiClient.get<ApiOrderHeader[]>(
     `https://devapi.tech23.net/global/globalViewHandler?viewname=655&CLIENTEMAIL=${encodeURIComponent(clientEmail)}`,
@@ -111,7 +102,17 @@ export const fetchOrderHistoryAPI = (clientEmail: string) => {
     }
   );
 };
-// --- END ORDER HISTORY API ---
 
+// New API to fetch order items for a specific order
+export const fetchOrderItemsAPI = (orderId: string) => {
+  return apiClient.get<ApiOrderItemDetail[]>(
+    `https://devapi.tech23.net/global/globalViewHandler?viewname=654&ENQUIRYNO=${encodeURIComponent(orderId)}`,
+    {
+      headers: {
+        'session-token': HARDCODED_SESSION_TOKEN,
+      }
+    }
+  );
+};
 
 export default apiClient;

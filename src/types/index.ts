@@ -15,32 +15,30 @@ export interface Category {
   slug: string; 
 }
 
-// Updated Product to reflect new API (viewname=792)
 export interface Product {
-  id: string; // ITEM CODE
-  title: string; // ITEM NAME
-  price: number; // SELLINGPRICE
-  description: string; // ITEM DESCRIPTION
-  category: string; // ITEM CATEGORY
-  image: string | null; // IMAGEPATH
-  classification: string; // ITEM CLASSIFICATION
+  id: string; 
+  title: string; 
+  price: number; 
+  description: string; 
+  category: string; 
+  image: string | null; 
+  classification: string; 
   rating: { 
-    rate: number; // RATING
-    count: number; // Not in new API, default to 0
+    rate: number; 
+    count: number; 
   };
-  stockAvailability: boolean; // Not in new API, defaulting to true
+  stockAvailability: boolean; 
   PART_NO?: string;
   ITEM_BASE_UOM?: string;
   ITEM_ALT_UOM?: string;
   ITEM_CONV_FACTOR?: number;
-  ITEM_VATABLE?: string; // "YES" or "NO"
+  ITEM_VATABLE?: string; 
   REORDER_LEVEL?: number | null;
   REORDER_QTY?: number | null;
   COST_PRICE?: number | null;
   LATEST_COST_PRICE?: number | null;
 }
 
-// --- START AUTH and USER TYPES ---
 export type AddressType = 'home' | 'office' | 'other';
 
 export interface UserAddress {
@@ -99,21 +97,17 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  signup: (data: SignupData) => Promise<boolean>; // SignupData is still used here internally
+  signup: (data: SignupData) => Promise<boolean>;
   updateUserProfile: (updatedProfileData: Partial<User>, currentPasswordForApi: string) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
-export type SignupData = SignupFormData; // Alias for clarity if AuthContext uses SignupData
-// --- END AUTH and USER TYPES ---
+export type SignupData = SignupFormData; 
 
-
-// --- START ORDER TYPES ---
-export type OrderType = 'dine-in' | 'delivery'; // This might be hard to determine from viewname=655
+export type OrderType = 'dine-in' | 'delivery'; 
 
 export type OrderStatusDineIn = "Order Placed" | "Being Prepared" | "Table Ready" | "Completed";
 export type OrderStatusDelivery = "Order Placed" | "Being Prepared" | "In Transit" | "Delivered";
-// Adding more general statuses that might come from API
-export type OrderStatus = OrderStatusDineIn | OrderStatusDelivery | "Unknown Status" | "Processing"; // Added more
+export type OrderStatus = OrderStatusDineIn | OrderStatusDelivery | "Unknown Status" | "Processing"; 
 
 export const DINE_IN_ORDER_STATUS_STEPS: OrderStatusDineIn[] = ["Order Placed", "Being Prepared", "Table Ready", "Completed"];
 export const DELIVERY_ORDER_STATUS_STEPS: OrderStatusDelivery[] = ["Order Placed", "Being Prepared", "In Transit", "Delivered"];
@@ -123,43 +117,59 @@ export interface OrderItemDetail {
   productId: string; 
   name: string; 
   quantity: number;
-  price: number; 
+  price: number; // This will be unit price
   imageUrl?: string | null; 
   dataAiHint?: string;
 }
 
-// Represents the data from viewname=655 API
+// Raw item from viewname=654
+export interface ApiOrderItemDetail {
+  ENQUIRYNO: string;
+  ENQUIRYDATE: string;
+  ITEMSERIALNO: string;
+  ITEMCODE: string;
+  ITEMDESCRIPTION: string;
+  ITEMUOM: string;
+  ITEMQTY: number;
+  ITEMRATE: number; // Assuming this is unit price or line total. To be confirmed.
+  POITEMAMOUNT: number; // Assuming this is quantity * unit price
+  VAT?: number;
+  ITEMPARTNO?: string;
+  // ... other fields from the API response
+}
+
+// Represents the data from viewname=655 API (Order Header)
 export interface ApiOrderHeader {
   ENQUIRYNO: string;
   REFFROM: string;
-  ENQUIRYDATE: string; // ISO Date string
+  ENQUIRYDATE: string; 
   CLIENTCODE: string;
   CLIENTEMAIL: string;
   "CLIENT NAME": string;
   PHONENUMBER: string;
-  ENQUIRYSTATUS: number; // Numeric status
+  ENQUIRYSTATUS: number; 
+  "CLIENT ADDR1"?: string;
+  DIVISION?: string;
+  GROSSAMT?: number;
+  MODEOFPAY?: string;
   // Add other fields from the API response as needed
 }
 
-// This is the Order type used by the application, potentially enriched from multiple API calls or defaults
 export interface Order {
-  id: string; // Mapped from ENQUIRYNO
-  userId: string; // Mapped from CLIENTCODE or CLIENTEMAIL
-  orderType: OrderType; // Problematic: Not in viewname=655. Default or derive?
-  currentStatus: OrderStatus; // Mapped from ENQUIRYSTATUS
-  statusHistory: { status: OrderStatus; timestamp: string }[]; // Not in viewname=655
-  items: OrderItemDetail[]; // Not in viewname=655. Will be empty for list.
-  totalAmount: number; // Not in viewname=655.
-  orderDate: string; // Mapped from ENQUIRYDATE
-  estimatedTime?: string; // Not in viewname=655
-  deliveryDetails?: CheckoutFormDataType; // Not in viewname=655
-  clientName?: string; // Mapped from "CLIENT NAME"
-  phoneNumber?: string; // Mapped from PHONENUMBER
-  // Raw numeric status from API, useful for debugging or direct use if mapping is complex
+  id: string; 
+  userId: string; 
+  orderType: OrderType; 
+  currentStatus: OrderStatus; 
+  statusHistory: { status: OrderStatus; timestamp: string }[]; 
+  items: OrderItemDetail[]; 
+  totalAmount: number; 
+  orderDate: string; 
+  estimatedTime?: string; 
+  deliveryDetails?: Partial<CheckoutFormDataType>; // Using partial as not all fields might be there
+  clientName?: string; 
+  phoneNumber?: string; 
   rawEnquiryStatus?: number; 
 }
-// --- END ORDER TYPES ---
-
 
 export interface CartItem {
   productId: string; 
@@ -184,7 +194,7 @@ export const checkoutFormSchema = z.object({
   addressOption: z.enum(['profile', 'new']).default('profile'), 
 }).superRefine((data, ctx) => {
   if (data.addressOption === 'new') {
-    if (!data.deliveryAddress || data.deliveryAddress.length < 5) { // Adjusted min length
+    if (!data.deliveryAddress || data.deliveryAddress.length < 5) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Street address must be at least 5 characters.",
@@ -198,7 +208,7 @@ export const checkoutFormSchema = z.object({
         path: ["city"],
       });
     }
-    if (!data.pinCode || !/^[0-9A-Za-z\s-]{3,10}$/.test(data.pinCode)) { // More flexible pincode
+    if (!data.pinCode || !/^[0-9A-Za-z\s-]{3,10}$/.test(data.pinCode)) { 
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Invalid pin code (3-10 chars).",
@@ -231,7 +241,6 @@ export interface HighlightItem {
   description: string;
 }
 
-// --- START ADMIN AUTH TYPES ---
 export interface AdminUser {
   userType: boolean;
   userCode: string;
@@ -253,10 +262,7 @@ export interface AdminAuthState {
   isLoading: boolean;
   error: string | null;
 }
-// --- END ADMIN AUTH TYPES ---
 
-// --- START ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
-// AdminProduct type from API (viewname=792)
 export interface AdminProduct {
   "ITEM CODE": string;
   "PART NO": string;
@@ -296,9 +302,7 @@ export interface UpdateProductImagePathPayload {
 export interface UpdateProductImagePathResponse {
   message: string; 
 }
-// --- END ADMIN PRODUCT IMAGE MANAGEMENT TYPES ---
 
-// --- START USER SIGNUP API (SP 128) TYPES ---
 export interface UserSignupPayload {
   FIRSTNAME: string;
   LASTNAME: string;
@@ -314,9 +318,7 @@ export interface UserSignupPayload {
 export interface UserSignupResponse {
   message?: string; 
 }
-// --- END USER SIGNUP API (SP 128) TYPES ---
 
-// --- START API USER DETAIL (VIEWNAME 610) TYPE ---
 export interface ApiUserDetail {
   EMAILADDRESS: string;
   PASSWORD?: string; 
@@ -332,9 +334,7 @@ export interface ApiUserDetail {
   REGISTRATIONDATE?: string;
   REGISTRATIONTIME?: string;
 }
-// --- END API USER DETAIL (VIEWNAME 610) TYPE ---
 
-// --- START CHECKOUT ORDER SAVING TYPES ---
 export interface NextPurchaseOrderNumber {
   NEXTPONO: string;
 }
@@ -394,5 +394,4 @@ export interface SalesEnquiryItemPayload {
 export interface SalesEnquiryResponse {
   message: string; 
 }
-// --- END CHECKOUT ORDER SAVING TYPES ---
     
