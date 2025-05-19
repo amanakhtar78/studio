@@ -125,7 +125,7 @@ export default function OrderDetailPage() {
           {error || "We couldn't find the order you're looking for."}
         </p>
         <Button asChild variant="outline" size="sm">
-          <Link href="/my-orders" legacyBehavior={false}><a>Back to My Orders</a></Link>
+          <Link href="/my-orders">Back to My Orders</Link>
         </Button>
       </div>
     );
@@ -248,3 +248,4 @@ export default function OrderDetailPage() {
     </div>
   );
 }
+

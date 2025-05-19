@@ -112,7 +112,7 @@ export default function MyOrdersPage() {
           You haven't placed any orders. Start shopping to see your orders here!
         </p>
         <Button asChild size="sm">
-          <Link href="/" legacyBehavior passHref><a>Continue Shopping</a></Link>
+          <Link href="/">Continue Shopping</Link>
         </Button>
       </div>
     );
@@ -193,7 +193,7 @@ export default function MyOrdersPage() {
             </CardContent>
             <CardFooter className="border-t p-3"> 
               <Button asChild size="sm" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground text-xs">
-                <Link href={`/my-orders/${order.id}`} legacyBehavior={false} passHref><a>View Details</a></Link>
+                <Link href={`/my-orders/${order.id}`}>View Details</Link>
               </Button>
               {(order.currentStatus === 'Completed' || order.currentStatus === 'Delivered') && (
                 <Button variant="outline" size="sm" className="w-full sm:w-auto sm:ml-auto mt-1.5 sm:mt-0 text-xs" onClick={() => alert('Reorder functionality coming soon!')}> 
@@ -207,3 +207,4 @@ export default function MyOrdersPage() {
     </div>
   );
 }
+

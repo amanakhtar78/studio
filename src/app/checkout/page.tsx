@@ -353,7 +353,7 @@ export default function CheckoutPage() {
         <h1 className="text-2xl font-bold mb-4">Your Cart is Empty</h1>
         <p className="text-muted-foreground mb-6 text-sm">Looks like you haven't added anything to your cart yet.</p>
         <Button asChild size="sm">
-          <Link href="/" legacyBehavior passHref><a>Continue Shopping</a></Link>
+          <Link href="/">Continue Shopping</Link>
         </Button>
       </div>
     );
@@ -647,3 +647,4 @@ export default function CheckoutPage() {
 }
 
     
+

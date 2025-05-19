@@ -63,10 +63,11 @@ export default function TrackOrderPage() {
             Login or Create Account
           </Button>
           <Button asChild variant="link" size="sm" className="text-primary text-xs">
-            <Link href="/" legacyBehavior passHref><a>Back to Shopping</a></Link>
+            <Link href="/">Back to Shopping</Link>
           </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
+
